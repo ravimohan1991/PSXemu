@@ -239,3 +239,6 @@ paket-files/
 # JetBrains Rider
 .idea/
 *.sln.iml
+build/Desktop_Qt_6_8_1-Debug/
+
+KarmaBin/
