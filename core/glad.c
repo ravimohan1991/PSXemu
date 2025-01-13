@@ -1323,10 +1323,10 @@ PFNGLWINDOWPOS3IVPROC glad_glWindowPos3iv = NULL;
 PFNGLWINDOWPOS3SPROC glad_glWindowPos3s = NULL;
 PFNGLWINDOWPOS3SVPROC glad_glWindowPos3sv = NULL;
 int GLAD_GL_ARB_debug_output = 0;
-PFNGLDEBUGMESSAGECONTROLARBPROC glad_glDebugMessageControlARB = NULL;
-PFNGLDEBUGMESSAGEINSERTARBPROC glad_glDebugMessageInsertARB = NULL;
-PFNGLDEBUGMESSAGECALLBACKARBPROC glad_glDebugMessageCallbackARB = NULL;
-PFNGLGETDEBUGMESSAGELOGARBPROC glad_glGetDebugMessageLogARB = NULL;
+PFNGLDEBUGMESSAGECONTROLPROC glad_glDebugMessageControlARB = NULL;
+PFNGLDEBUGMESSAGEINSERTPROC glad_glDebugMessageInsertARB = NULL;
+PFNGLDEBUGMESSAGECALLBACKPROC glad_glDebugMessageCallbackARB = NULL;
+PFNGLGETDEBUGMESSAGELOGPROC glad_glGetDebugMessageLogARB = NULL;
 static void load_GL_VERSION_1_0(GLADloadproc load) {
 	if(!GLAD_GL_VERSION_1_0) return;
 	glad_glCullFace = (PFNGLCULLFACEPROC)load("glCullFace");
@@ -2439,10 +2439,10 @@ static void load_GL_VERSION_4_6(GLADloadproc load) {
 }
 static void load_GL_ARB_debug_output(GLADloadproc load) {
 	if(!GLAD_GL_ARB_debug_output) return;
-	glad_glDebugMessageControlARB = (PFNGLDEBUGMESSAGECONTROLARBPROC)load("glDebugMessageControlARB");
-	glad_glDebugMessageInsertARB = (PFNGLDEBUGMESSAGEINSERTARBPROC)load("glDebugMessageInsertARB");
-	glad_glDebugMessageCallbackARB = (PFNGLDEBUGMESSAGECALLBACKARBPROC)load("glDebugMessageCallbackARB");
-	glad_glGetDebugMessageLogARB = (PFNGLGETDEBUGMESSAGELOGARBPROC)load("glGetDebugMessageLogARB");
+    glad_glDebugMessageControlARB = (PFNGLDEBUGMESSAGECONTROLPROC)load("glDebugMessageControlARB");
+    glad_glDebugMessageInsertARB = (PFNGLDEBUGMESSAGEINSERTPROC)load("glDebugMessageInsertARB");
+    glad_glDebugMessageCallbackARB = (PFNGLDEBUGMESSAGECALLBACKPROC)load("glDebugMessageCallbackARB");
+    glad_glGetDebugMessageLogARB = (PFNGLGETDEBUGMESSAGELOGPROC)load("glGetDebugMessageLogARB");
 }
 static int find_extensionsGL(void) {
 	if (!get_exts()) return 0;
