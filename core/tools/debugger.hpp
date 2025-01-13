@@ -4,15 +4,15 @@
 #include "mem_widget.hpp"
 
 class Bus;
-class Debugger {
+class DEBugger {
 public:
 	friend class CPUWidget;
 	friend class MemWidget;
 	friend class GPUWidget;
 
 public:
-	Debugger(Bus* _bus);
-	~Debugger();
+    DEBugger(Bus* _bus);
+	~DEBugger();
 
 	void init_theme();
 	void display();
@@ -26,7 +26,7 @@ private:
 };
 
 template<typename T>
-inline void Debugger::push_widget()
+inline void DEBugger::push_widget()
 {
 	widget_stack.push_back(new T(this));
 }

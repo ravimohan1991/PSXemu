@@ -68,7 +68,7 @@ public:
 	std::shared_ptr<Expansion2> exp2;
 
 	/* Debugging. */
-	std::unique_ptr<Debugger> debugger;
+	std::unique_ptr<DEBugger> debugger;
 	bool debug_enable = false;
 
 	/* Memory regions. */

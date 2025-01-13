@@ -8,16 +8,16 @@ struct RowDesc {
     uint* value;
 };
 
-class Debugger;
+class DEBugger;
 class GPUWidget : public Widget {
 public:
-    GPUWidget(Debugger* _debugger);
+    GPUWidget(DEBugger* _debugger);
 	~GPUWidget() = default;
 
 	void execute() override;
 
 private:
-	Debugger* debugger;
+    DEBugger* debugger;
 
     std::vector<RowDesc> rows;
 

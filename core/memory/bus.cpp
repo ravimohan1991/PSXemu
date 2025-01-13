@@ -48,7 +48,7 @@ Bus::Bus(const std::string& bios_path)
 	cddrive = std::make_unique<CDManager>(this);
 
 	/* Construct debugging tools. */
-	debugger = std::make_unique<Debugger>(this);
+	debugger = std::make_unique<DEBugger>(this);
 	debugger->push_widget<CPUWidget>();
 	debugger->push_widget<MemWidget>();
 

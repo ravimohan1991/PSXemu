@@ -4,7 +4,7 @@
 #include <memory/bus.h>
 #include <imgui.h>
 
-GPUWidget::GPUWidget(Debugger* _debugger) :
+GPUWidget::GPUWidget(DEBugger* _debugger) :
     Widget("GPU Status"), debugger(_debugger)
 {
     auto& status = debugger->bus->gpu->status;

@@ -2,16 +2,18 @@
 #include "widget.hpp"
 
 class Debugger;
-class CPUWidget : public Widget {
+
+class CPUWidget : public Widget
+{
 public:
-    CPUWidget(Debugger* _debugger) :
+    CPUWidget(class DEBugger* _debugger) :
         Widget("CPU Registers"), debugger(_debugger) {}
 	~CPUWidget() = default;
 
 	void execute() override;
 
 private:
-	Debugger* debugger;
+    class DEBugger* debugger;
     const std::string reg_table[32] =
     {
         "ZR", "AT", "V0", "V1", "A0", "A1", "A2", "A3", "T0",

@@ -1,6 +1,7 @@
 #pragma once
 #include <utility/types.hpp>
 #include <string>
+#include <glm/glm.hpp>
 
 enum class ShaderType {
     Vertex = 0x8B31,

@@ -170,6 +170,11 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_compile_definitions(KR_DEBUG)
 endif()
 
+# Metal
+find_library(METAL Metal)
+find_library(FOUNDATION Foundation)
+find_library(QUARTZCORE QuartzCore)
+find_library(APPKIT AppKit)
 
 # Set the project name and version
 project(core VERSION 1.0) # Versioning shall change to something more appropriate
@@ -198,6 +203,12 @@ target_include_directories(core
 # Rest of the Engine is Consumer here
 
 target_compile_definitions(core PUBLIC core)
+
+target_link_libraries(core PUBLIC
+    "-framework Metal"
+    "-framework Foundation"
+    "-framework QuartzCore"
+    "-framework AppKit" objc)
 
 #[[
  *                                          /\

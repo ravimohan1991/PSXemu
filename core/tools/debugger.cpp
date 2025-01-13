@@ -4,7 +4,7 @@
 #include <video/renderer.h>
 #include "imgui_header.hpp"
 
-Debugger::Debugger(Bus* _bus) :
+DEBugger::DEBugger(Bus* _bus) :
     bus(_bus)
 {
     /* Initialize ImGui. */
@@ -33,7 +33,7 @@ Debugger::Debugger(Bus* _bus) :
     io.Fonts->AddFontFromFileTTF("data/fonts/Roboto-Bold.ttf", 20.0f);
 }
 
-Debugger::~Debugger()
+DEBugger::~DEBugger()
 {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -44,7 +44,7 @@ Debugger::~Debugger()
     }
 }
 
-void Debugger::init_theme()
+void DEBugger::init_theme()
 {
     struct ImVec3 { float x, y, z; ImVec3(float _x = 0.0f, float _y = 0.0f, float _z = 0.0f) { x = _x; y = _y; z = _z; } };
 
@@ -96,7 +96,7 @@ void Debugger::init_theme()
     style.IndentSpacing = 12.0f;
 }
 
-void Debugger::display()
+void DEBugger::display()
 {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();

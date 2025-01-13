@@ -4,12 +4,12 @@
 class Debugger;
 class MemWidget : public Widget {
 public:
-	MemWidget(Debugger* _debugger) : 
+    MemWidget(class DEBugger* _debugger) : 
 		Widget("Memory Editor"), debugger(_debugger) {}
 	~MemWidget() = default;
 
 	void execute() override;
 
 private:
-	Debugger* debugger;
+	class DEBugger* debugger;
 };
