@@ -590,9 +590,9 @@ typedef unsigned int   stbi__uint32;
 typedef   signed int   stbi__int32;
 #else
 #include <stdint.h>
-typedef ushort stbi__uint16;
+typedef unsigned short stbi__uint16;
 typedef int16_t  stbi__int16;
-typedef uint stbi__uint32;
+typedef unsigned int stbi__uint32;
 typedef int32_t  stbi__int32;
 #endif
 

@@ -58,6 +58,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD)
+add_compile_definitions(STBI_NO_STDIO)
 
 # Then we specify the involved libraries
 add_subdirectory(libraries/glm)

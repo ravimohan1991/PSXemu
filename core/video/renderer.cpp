@@ -1,4 +1,4 @@
-﻿#include <stdafx.hpp>
+#include <stdafx.hpp>
 #include <glad/glad.h>
 #include "renderer.h"
 #include <memory/bus.h>
@@ -12,6 +12,11 @@ Renderer::Renderer(int width, int height, const std::string& title, Bus* _bus) :
 
     glfwInit();
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     window = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
     glfwMakeContextCurrent(window);
