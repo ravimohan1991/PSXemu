@@ -204,12 +204,6 @@ target_include_directories(core
 
 target_compile_definitions(core PUBLIC core)
 
-target_link_libraries(core PUBLIC
-    "-framework Metal"
-    "-framework Foundation"
-    "-framework QuartzCore"
-    "-framework AppKit" objc)
-
 #[[
  *                                          /\
  *                                         / /

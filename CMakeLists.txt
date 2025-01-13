@@ -60,6 +60,21 @@ endif()
 add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD)
 add_compile_definitions(STBI_NO_STDIO)
 
+# Platform specific defines
+# NOTE: These defines transcend libraries
+if(WIN32)
+    add_compile_definitions(KR_WINDOWS_PLATFORM)
+        if(MSVC)
+            # For faster multithreaded compilation
+        #add_definitions(/MP)
+        add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+        endif()
+elseif(UNIX AND NOT APPLE)
+    add_compile_definitions(KR_LINUX_PLATFORM)
+elseif(APPLE)
+    add_compile_definitions(KR_MAC_PLATFORM)
+endif()
+
 # Then we specify the involved libraries
 add_subdirectory(libraries/glm)
 add_subdirectory(libraries/glad)

@@ -1,11 +1,16 @@
 #pragma once
+#include <memory>
 #include "opengl/shader.h"
 #include <video/gpu_core.h>
 
+#ifdef KR_MAC_PLATFORM
 #define GLFW_INCLUDE_NONE
 #define GLFW_EXPOSE_NATIVE_COCOA
+#endif
 #include <GLFW/glfw3.h>
+#ifdef KR_MAC_PLATFORM
 #include <GLFW/glfw3native.h>
+#endif
 
 constexpr int MAX_VERTICES = 1024 * 512;
 
