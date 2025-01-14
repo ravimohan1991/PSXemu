@@ -27,10 +27,10 @@ DEBugger::DEBugger(Bus* _bus) :
 
     const char* glsl_version = "#version 330";
 
-    ImGui_ImplGlfw_InitForOpenGL(bus->renderer->window, true);
-    ImGui_ImplOpenGL3_Init(glsl_version);
+    //ImGui_ImplGlfw_InitForOpenGL(bus->renderer->window, true);
+    //ImGui_ImplOpenGL3_Init(glsl_version);
 
-    io.Fonts->AddFontFromFileTTF("data/fonts/Roboto-Bold.ttf", 20.0f);
+    //io.Fonts->AddFontFromFileTTF("data/fonts/Roboto-Bold.ttf", 20.0f);
 }
 
 DEBugger::~DEBugger()

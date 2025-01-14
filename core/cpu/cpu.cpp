@@ -35,11 +35,11 @@ void CPU::tick()
     }
 
     /* Execute it. */
-    auto& handler = lookup[instr.opcode()];
+    /*auto& handler = lookup[instr.opcode()];
     if (handler != nullptr)
         handler();
     else
-        exception(ExceptionType::IllegalInstr);
+        exception(ExceptionType::IllegalInstr);*/
 
     /* Apply pending load delays. */
     handle_load_delay();

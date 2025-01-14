@@ -56,8 +56,8 @@ Bus::Bus(const std::string& bios_path)
 	util::read_binary_file(bios_path, 512 * 1024, bios);
 
 	/* Configure window. */
-	glfwSetWindowUserPointer(renderer->window, this);
-	glfwSetKeyCallback(renderer->window, &Bus::key_callback);
+	//glfwSetWindowUserPointer(renderer->window, this);
+	//glfwSetKeyCallback(renderer->window, &Bus::key_callback);
 }
 
 /* Get the physical memory address from the virtual one. */
