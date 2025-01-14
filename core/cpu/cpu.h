@@ -18,14 +18,28 @@ const Range KSEG1 = Range(0xA0000000, 512 * 1024 * 1024LL);
 const Range KSEG2 = Range(0xC0000000, 1024 * 1024 * 1024LL);
 const Range INTERRUPT = Range(0x1f801070, 8);
 
-/* A class implemeting the MIPS R3000A CPU. */
-class CPU {
+/**
+ * @brief A class implemeting the MIPS R3000A CPU having von-Neumann
+ * architecture. The addresses are 32 bits of memory locations including
+ * the peripherals.
+ *
+ * @note There are 67 opcodes in playstation's MIPS CPU and
+ * they are defined in this class
+ */
+class CPU
+{
 public:
     CPU(Bus* bus);
     ~CPU();
 
     /* CPU functionality. */
     void tick();
+
+    /**
+     * @brief Basically restart the system in a clean and deterministic
+     * state. The docs say that reset value of PC is 0xbfc00000 which
+     * translates to the begining of PS1 Bios in memory map
+     */
     void reset();
     void fetch();
     void branch();
