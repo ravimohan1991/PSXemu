@@ -1,4 +1,5 @@
 #pragma once
+#include <fstream>
 
 namespace fs = std::filesystem;
 

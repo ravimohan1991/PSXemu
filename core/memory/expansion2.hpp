@@ -1,6 +1,7 @@
 #pragma once
 #include <utility/types.hpp>
 #include <memory/bus.h>
+#include "utility/utility.hpp"
 
 class Expansion2 {
 public:
@@ -24,7 +25,8 @@ inline void Expansion2::write(uint address, T data)
 {
 	int offset = bus->EXPANSION_2.offset(address);
 	/* Write to POST register. */
-	if (offset == 0x41) {
+	if (offset == 0x41)
+    {
 		util::write_memory<T>((ubyte*)&post, offset - 0x41, data);
 	}
 }

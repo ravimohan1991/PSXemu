@@ -3,6 +3,7 @@
 #include <cpu/gte.h>
 #include <cpu/instr.hpp>
 #include <cpu/cop0.h>
+#include <fstream>
 
 struct MEM {
     uint reg = 0;
