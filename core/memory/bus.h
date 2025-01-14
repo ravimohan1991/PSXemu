@@ -34,7 +34,19 @@ class Renderer;
 class Expansion2;
 
 struct GLFWwindow;
-class Bus {
+
+/**
+ * @brief
+ * A system bus is a set of electronic cables that connects a computer's main
+ * components (CPU, memory, and I/O devices), allowing data to be transferred between them.
+ *
+ * The system bus is made up of three types of buses:
+ * 1. Data bus: Carries the data being transferred
+ * 2. Address bus: Determines the location of the data
+ * 3. Control bus: Manages the timing and direction of data flow
+ */
+class Bus
+{
 public:
 	Bus(const std::string& bios_path);
 	~Bus() = default;

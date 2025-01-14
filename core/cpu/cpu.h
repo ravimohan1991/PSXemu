@@ -20,7 +20,8 @@ const Range KSEG2 = Range(0xC0000000, 1024 * 1024 * 1024LL);
 const Range INTERRUPT = Range(0x1f801070, 8);
 
 /**
- * @brief A class implemeting the MIPS R3000A CPU having von-Neumann
+ * @brief
+ * A class implemeting the MIPS R3000A CPU having von-Neumann
  * architecture. The addresses are 32 bits of memory locations including
  * the peripherals.
  *
@@ -30,6 +31,16 @@ const Range INTERRUPT = Range(0x1f801070, 8);
 class CPU
 {
 public:
+    /**
+     * @brief
+     * Does the following:
+     * 1. Initializes PS bus,
+     * 2. coprocessor (Cop0) Processor Revision Identifier,
+     * 3. opcode registration, and
+     * 4. reset (CPU::reset()) or clean slate :D
+     *
+     * @param bus                               The ``Bus`` object created using BIOS
+     */
     CPU(Bus* bus);
     ~CPU();
 
@@ -37,11 +48,17 @@ public:
     void tick();
 
     /**
-     * @brief Basically restart the system in a clean and deterministic
+     * @brief
+     * Basically restart the system in a clean and deterministic
      * state. The docs say that reset value of PC is 0xbfc00000 which
      * translates to the begining of PS1 Bios in memory map
      */
     void reset();
+    
+    /**
+     * @brief
+     * Fetches the next instruction
+     */
     void fetch();
     void branch();
     void register_opcodes();
