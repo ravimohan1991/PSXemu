@@ -1,3 +1,6 @@
+/**
+ * @file cpu.h
+ */
 #pragma once
 #include <memory/bus.h>
 #include <cpu/gte.h>
@@ -42,9 +45,19 @@ public:
      * @param bus                               The ``Bus`` object created using BIOS
      */
     CPU(Bus* bus);
+    
+    /**
+     * @brief
+     * A destructor which closes logfiel atm
+     */
     ~CPU();
 
-    /* CPU functionality. */
+    /**
+     * @brief
+     * CPU functionality
+     *
+     * @see ``Bus::tick()``
+     */
     void tick();
 
     /**
@@ -57,7 +70,10 @@ public:
     
     /**
      * @brief
-     * Fetches the next instruction
+     * Fetches the instruction by reading the ``pc`` address and does the appropriate increment
+     *
+     * @note
+     * The read instruction is stored in ``instr``
      */
     void fetch();
     void branch();
@@ -126,7 +142,26 @@ public:
     Bus* bus;
 
     /* Registers. */
-    uint current_pc, pc, next_pc;
+    
+    /**
+     * @brief
+     * Program counter register
+     *
+     * @note We are using unsigned 32bit because PS1 uses 32bit addresses
+     */
+    uint pc;
+    
+    /**
+     * @brief
+     * Cache for current value (address) of program counter
+     */
+    uint current_pc;
+    
+    /**
+     * @brief
+     * Cache for address of next instruction
+     */
+    uint next_pc;
     uint i_stat, i_mask;
     uint registers[32] = {};
     uint hi, lo;
@@ -157,7 +192,10 @@ public:
     MEM write_back, memory_load;
     MEM delayed_memory_load;
 
-    /* Current instruction. */
+    /**
+     * @brief
+     * Current instruction
+     */
     Instr instr;
 
     /* Opcode lookup table. */

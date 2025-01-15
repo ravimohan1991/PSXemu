@@ -57,6 +57,10 @@ public:
 	template <typename T = uint>
 	void write(uint addr, T data);
 
+    /**
+     * @brief
+     * Ticking of ``Bus``
+     */
 	void tick();
 	void irq(Interrupt interrupt) const;
 	uint physical_addr(uint addr);
