@@ -48,7 +48,7 @@ public:
     
     /**
      * @brief
-     * A destructor which closes logfiel atm
+     * A destructor which closes logfile atm
      */
     ~CPU();
 
