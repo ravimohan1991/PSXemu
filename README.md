@@ -1,8 +1,9 @@
-## PSXemu - Playstation emulator in C++ 17.
+## PSXemu - Playstation emulator in C++
 
 ----
 
-PSXemu is a experimental emulator project for the Playstation 1. It aims to be an easy to use and well-documented emulator. Currently it is able to complete the BIOS startup with proper rendering. 
+PSXemu is a experimental emulator project for the Playstation 1. It aims to be an easy to use and well-documented emulator. Currently you can compile this multiplatform software and run on Linux and MacOS.
+The first aim is to boot from BIOS.
 
 ## Features
 - A full implementation of the MIPS R3000A CPU.
