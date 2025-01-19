@@ -9,7 +9,11 @@ struct Instr {
     uint rs() { return (value >> 21) & 0x1F; }//Register Source
     uint rt() { return(value >> 16) & 0x1F; }//Register Target
     uint imm() { return value & 0xFFFF; } //Immediate value
-    uint imm_s() { return(uint)(int16_t)imm(); } //Immediate value sign extended
+    
+    /**
+     * @brief Immediate value sign extended
+     */
+    uint imm_s() { return(uint)(int16_t)imm(); }
 
     //R-Type
     uint rd() { return(value >> 11) & 0x1F; }

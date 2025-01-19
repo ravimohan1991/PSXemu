@@ -135,7 +135,8 @@ void CPU::fetch()
     took_branch = false;
 
     /* Check aligment errors. */
-    if ((current_pc % 4) != 0) {
+    if ((current_pc % 4) != 0)
+    {
         cop0.BadA = current_pc;
 
         exception(ExceptionType::ReadError);

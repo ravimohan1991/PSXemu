@@ -76,8 +76,33 @@ public:
      * The read instruction is stored in ``instr``
      */
     void fetch();
+    
+    /**
+     * @brief
+     * No clue.
+     * Seems like ``next_pc`` component of program counter is assigned ``instr::imm_s`` shifted by 2^2
+     * @code{.cpp}
+     * instr.imm_s() << 2
+     * @endcode
+     *
+     * @todo Need to know the purpose of branching
+     */
     void branch();
+    
+    /**
+     * @brief
+     * Registration of opcodes by creating a lookup table with key-value
+     * pair with key being some address in bios ? (to be made clear later) and value is address of op function
+     *
+     * @see
+     * ``lookup``
+     *
+     */
     void register_opcodes();
+    
+    /**
+     * @brief
+     */
     void handle_interrupts();
     void handle_load_delay();
     void force_test();
