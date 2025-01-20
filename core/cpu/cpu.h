@@ -8,7 +8,8 @@
 #include <cpu/cop0.h>
 #include <fstream>
 
-struct MEM {
+struct MEM
+{
     uint reg = 0;
     uint value = 0;
 };
@@ -26,7 +27,8 @@ const Range INTERRUPT = Range(0x1f801070, 8);
  * @brief
  * A class implemeting the MIPS R3000A CPU having von-Neumann
  * architecture. The addresses are 32 bits of memory locations including
- * the peripherals.
+ * the peripherals. For perspective, PS5 uses properitery (hehe) variation
+ * of Zen 2 microarchitecture (https://en.wikipedia.org/wiki/Zen_2).
  *
  * @note There are 67 opcodes in playstation's MIPS CPU and
  * they are defined in this class
@@ -54,9 +56,14 @@ public:
 
     /**
      * @brief
-     * CPU functionality
+     * CPU functionality. See ``/core/Bus/tick``, ``/core/CPU/fetch``.
      *
-     * @see ``Bus::tick()``
+     * @note
+     * A typical CPU execution cycle (tick?) goes roughly like this:
+     * 1. Fetch the instruction located at address PC,
+     * 2. Increment the PC to point to the next instruction,
+     * 3. Execute the instruction,
+     * 4. Repeat
      */
     void tick();
 
@@ -70,22 +77,34 @@ public:
     
     /**
      * @brief
-     * Fetches the instruction by reading the ``pc`` address and does the appropriate increment
+     * Fetches the instruction by reading the ``pc`` address and does the appropriate increment.
+     * See ``/core/CPU/tick``.
      *
      * @note
      * The read instruction is stored in ``instr``
+     * @note
+     * A typical CPU execution cycle (tick?) goes roughly like this:
+     * 1. Fetch the instruction located at address PC,
+     * 2. Increment the PC to point to the next instruction,
+     * 3. Execute the instruction,
+     * 4. Repeat
      */
     void fetch();
     
     /**
      * @brief
      * No clue.
-     * Seems like ``next_pc`` component of program counter is assigned ``instr::imm_s`` shifted by 2^2
+     * Seems like ``next_pc`` component of program counter is assigned ``/core/Instr/imm_s`` shifted by 2^2
      * @code{.cpp}
      * instr.imm_s() << 2
      * @endcode
      *
-     * @todo Need to know the purpose of branching
+     * @note
+     * A branch, jump or transfer is an instruction in a computer program that can cause a computer to begin executing a
+     * different instruction sequence and thus deviate from its default behavior of executing instructions in order. Branch (or
+     * branching, branched) may also refer to the act of switching execution to a different instruction sequence as a result of
+     * executing a branch instruction. Branch instructions are used to implement control flow in program loops and
+     * conditionals (i.e., executing a particular sequence of instructions only if certain conditions are satisfied).
      */
     void branch();
     
@@ -184,7 +203,7 @@ public:
     
     /**
      * @brief
-     * Cache for address of next instruction
+     * Cache for address of next instruction of program counter (``pc``).
      */
     uint next_pc;
     uint i_stat, i_mask;

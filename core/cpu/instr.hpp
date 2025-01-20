@@ -1,7 +1,8 @@
 #pragma once
 #include <memory/range.h>
 
-struct Instr {
+struct Instr
+{
     uint value;                     //debug
     uint opcode() { return value >> 26; }     //Instr opcode
 
@@ -11,7 +12,8 @@ struct Instr {
     uint imm() { return value & 0xFFFF; } //Immediate value
     
     /**
-     * @brief Immediate value sign extended
+     * @brief
+     * Immediate value sign extended
      */
     uint imm_s() { return(uint)(int16_t)imm(); }
 
