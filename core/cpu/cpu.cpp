@@ -23,17 +23,20 @@ CPU::~CPU()
 
 void CPU::tick()
 {
+    if (should_log)
+    {
+        if (!log_file.is_open())
+        {
+            log_file.open("log.txt");
+        }
+
+        log_file << "PC: 0x" << std::hex << pc << '\n';
+    }
+    
     /* Fetch next instruction. */
     fetch();
 
     //if (pc == 0x8002dde4) __debugbreak();
-
-    if (should_log)
-    {
-        if (!log_file.is_open()) log_file.open("log.txt");
-
-        log_file << "PC: 0x" << std::hex << pc << '\n';
-    }
 
     /* Execute it. */
     auto& handler = lookup[instr.opcode()];

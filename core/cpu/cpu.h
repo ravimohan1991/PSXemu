@@ -232,8 +232,13 @@ public:
     
     /* Debugging. */
     bool should_break = false;
-    bool should_log = false;
-    bool exe = true;
+    bool should_log = true;
+    bool exe = false;
+    
+    /**
+     * @brief
+     * File for logging the current status
+     */
     std::ofstream log_file;
     int cycle_int = 20000;
     bool flip = true;

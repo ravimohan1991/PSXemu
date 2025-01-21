@@ -51,6 +51,12 @@ public:
 	Bus(const std::string& bios_path);
 	~Bus() = default;
 
+    /**
+     * @brief
+     * Read the memory at address
+     *
+     * @param addr                                          The address to be read
+     */
 	template <typename T = uint>
 	T read(uint addr);
 

@@ -78,14 +78,18 @@ endif()
 # Then we specify the involved libraries
 add_subdirectory(libraries/glm)
 add_subdirectory(libraries/glad)
-
+add_subdirectory(libraries/spdlog)
 add_subdirectory(libraries/glfw)
 
+# The emulator software directory
 add_subdirectory(core)
 
 
 target_link_libraries(core PUBLIC glm)
 target_link_libraries(core PUBLIC glfw)
+
+target_link_libraries(core PUBLIC spdlogging)
+
 #[[
  *                                          /\
  *                                         / /

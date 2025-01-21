@@ -22,6 +22,8 @@
 #include <utility/types.hpp>
 #include <utility/utility.hpp>
 
+#include <utility/log.h>
+
 /* GLM headers. */
 #include <glm/gtc/matrix_integer.hpp>
 #include <glm/gtc/type_ptr.hpp>

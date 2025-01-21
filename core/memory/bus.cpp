@@ -159,7 +159,8 @@ bool Bus::loadEXE(std::string m_psxexe_path, PSEXELoadInfo& out_psx_load_info)
 void Bus::tick()
 {
 	/* Tick the CPU. */
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < 100; i++)
+    {
 		cpu->tick();
 	}
 
