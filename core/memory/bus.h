@@ -92,6 +92,14 @@ public:
 	ubyte registers[4 * 1024] = {};
 	ubyte ram[2048 * 1024] = {};
 	ubyte scratchpad[1024] = {};
+    
+    /**
+     * @brief
+     * Buffer for PS1 BIOS (firmware)
+     *
+     * @note
+     * The size is in bytes, 512 kilo bytes (ubyte is one unsigned byte)
+     */
 	ubyte bios[512 * 1024] = {};
 	ubyte ex1[512 * 1024] = {};
 	

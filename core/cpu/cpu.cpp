@@ -36,11 +36,16 @@ void CPU::tick()
     }
 
     /* Execute it. */
-    /*auto& handler = lookup[instr.opcode()];
+    auto& handler = lookup[instr.opcode()];
+    
     if (handler != nullptr)
+    {
         handler();
+    }
     else
-        exception(ExceptionType::IllegalInstr);*/
+    {
+        exception(ExceptionType::IllegalInstr);
+    }
 
     /* Apply pending load delays. */
     handle_load_delay();
@@ -99,7 +104,8 @@ void CPU::handle_interrupts()
     uint instr = load >> 26;
 
     /* If it is a GTE instruction do not execute interrupt! */
-    if (instr == 0x12) {
+    if (instr == 0x12)
+    {
         return;
     }
 
@@ -115,7 +121,8 @@ void CPU::handle_interrupts()
     uint irq_pending = (cop0.cause.raw >> 8) & 0xFF;
 
     /* If pending and enabled, handle the interrupt. */
-    if (irq_enabled && (irq_mask & irq_pending) > 0) {
+    if (irq_enabled && (irq_mask & irq_pending) > 0)
+    {
         exception(ExceptionType::Interrupt);
     }
 }
@@ -233,7 +240,8 @@ void CPU::exception(ExceptionType cause, uint cop)
 
 void CPU::handle_load_delay()
 {
-    if (delayed_memory_load.reg != memory_load.reg) {
+    if (delayed_memory_load.reg != memory_load.reg)
+    {
         registers[memory_load.reg] = memory_load.value;
     }
     memory_load = delayed_memory_load;

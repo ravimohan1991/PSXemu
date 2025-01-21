@@ -2,7 +2,8 @@
 #include <string>
 #include <utility/types.hpp>
 
-namespace util {
+namespace util
+{
 	static uint bit_range(uint num, int start, int end)
 	{
 		uint mask = (1 << (end - start)) - 1;
@@ -107,6 +108,15 @@ namespace util {
 		data[index] = value;
 	}
 
+    /**
+     * @brief
+     * Read (or load) a file from disk to target buffer of specified size (?)
+     *
+     * @param file                              The relative or full path of the file to be loaded
+     * @param size                              The specified cumulative size of buffer elements (in bytes)
+     *
+     * @param target                          The pointer to buffer memory block where the data read will be stored
+     */
 	static inline void read_binary_file(const std::string& file, ulong size, ubyte* target)
 	{
 		FILE* in = fopen(file.c_str(), "rb");

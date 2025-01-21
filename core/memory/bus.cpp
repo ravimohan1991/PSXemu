@@ -52,7 +52,7 @@ Bus::Bus(const std::string& bios_path)
 	debugger->push_widget<CPUWidget>();
 	debugger->push_widget<MemWidget>();
 
-	/* Open BIOS file. */
+	/* Open BIOS file into 512 kb (for PS1) buffer. */
 	util::read_binary_file(bios_path, 512 * 1024, bios);
 
 	/* Configure window. */
@@ -261,7 +261,7 @@ T Bus::read(uint addr)
 		return cpu->read_irq(abs_addr);
 	}
 	else {
-		printf("[MEM] Emulator::read: unhandled read to address: 0x%x with width %d.\n", abs_addr, sizeof(T));
+        printf("[MEM] Emulator::read: unhandled read to address: 0x%x with width %lu.\n", abs_addr, sizeof(T));
 		return 0xFFFFFFFF;
 	}
 }

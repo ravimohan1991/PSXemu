@@ -121,8 +121,19 @@ public:
     
     /**
      * @brief
+     * Handle requested interrupts. See ``/core/Bus/tick``.
+     *
+     * @note
+     * Interrupts are a signal coming from the peripherals to the CPU to notify it
+     * that a certain event occurred (a timer reached its target value, a button was
+     * pressed on the controller etc. . . ). This way the CPU doesn’t have to waste time
+     * polling the status of the various peripherals, it can just wait for the interrupt notification.
      */
     void handle_interrupts();
+    
+    /**
+     * 
+     */
     void handle_load_delay();
     void force_test();
 
@@ -139,6 +150,10 @@ public:
     template <typename T = uint>
     void write(uint addr, T data);
 
+    /**
+     * @brief
+     * Means interrupt request
+     */
     uint read_irq(uint address);
     void write_irq(uint address, uint value);
     void trigger(Interrupt interrupt);
