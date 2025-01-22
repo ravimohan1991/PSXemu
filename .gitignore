@@ -242,3 +242,7 @@ paket-files/
 build/Desktop_Qt_6_8_1-Debug/
 
 KarmaBin/
+
+KarmaLightHouse/
+
+.DS_Store

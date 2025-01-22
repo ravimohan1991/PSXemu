@@ -232,7 +232,7 @@ public:
     
     /* Debugging. */
     bool should_break = false;
-    bool should_log = true;
+    bool should_log = false;
     bool exe = false;
     
     /**
@@ -269,6 +269,8 @@ public:
 template<typename T>
 inline T CPU::read(uint addr)
 {
+    KR_CORE_INFO("Attempting to read virtual address {0:x} using bus", addr);
+    
     /* Read from main RAM or IO. */
     return bus->read<T>(addr);
 }

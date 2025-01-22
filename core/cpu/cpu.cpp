@@ -33,6 +33,9 @@ void CPU::tick()
         log_file << "PC: 0x" << std::hex << pc << '\n';
     }
     
+    KR_CORE_INFO("Inside CPU::tick");
+    KR_CORE_INFO("PC: 0x{0:x}", pc);
+    
     /* Fetch next instruction. */
     fetch();
 
@@ -41,8 +44,11 @@ void CPU::tick()
     /* Execute it. */
     auto& handler = lookup[instr.opcode()];
     
+    KR_CORE_INFO("Attempting executing opcode {0:x} from lookup table", instr.opcode());
+    
     if (handler != nullptr)
     {
+        KR_CORE_INFO("Executing legal instruction");
         handler();
     }
     else
@@ -132,7 +138,23 @@ void CPU::handle_interrupts()
 
 void CPU::fetch()
 {
+    KR_CORE_INFO("Fetching next instruction");
+    
     instr.value = read(pc);
+    
+    KR_CORE_INFO("+-------------------------------------------------------");
+    KR_CORE_INFO("| Fetched instruction ");
+    KR_CORE_INFO("| value: {0}, 0x{0:x}", instr.value);
+    KR_CORE_INFO("| opcode: {0}, 0x{0:x}", instr.opcode());
+    KR_CORE_INFO("| rs: {0}, 0x{0:x}", instr.rs());
+    KR_CORE_INFO("| rt: {0}, 0x{0:x}", instr.rt());
+    KR_CORE_INFO("| imm: {0}, 0x{0:x}", instr.imm());
+    KR_CORE_INFO("| imms: {0}, 0x{0:x}", instr.imm_s());
+    KR_CORE_INFO("| rd: {0}, 0x{0:x}", instr.rd());
+    KR_CORE_INFO("| sa: {0}, 0x{0:x}", instr.sa());
+    KR_CORE_INFO("| addr: {0}, 0x{0:x}", instr.addr());
+    KR_CORE_INFO("| id: {0}, 0x{0:x}", instr.id());
+    KR_CORE_INFO("+-------------------------------------------------------");
 
     /* Update PC. */
     current_pc = pc;
@@ -206,6 +228,8 @@ void CPU::op_ctc2()
 
 void CPU::exception(ExceptionType cause, uint cop)
 {
+    KR_CORE_INFO("Processing illegal expression {0:x}", (uint)cause);
+    
     uint mode = cop0.sr.raw & 0x3F;
     cop0.sr.raw &= ~(uint)0x3F;
     cop0.sr.raw |= (mode << 2) & 0x3F;
