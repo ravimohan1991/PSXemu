@@ -246,3 +246,13 @@ KarmaBin/
 KarmaLightHouse/
 
 .DS_Store
+
+*.aux
+
+*.lof
+
+*.lot
+
+*.out
+
+*.toc
