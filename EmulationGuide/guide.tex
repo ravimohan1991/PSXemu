@@ -505,6 +505,9 @@ I've decided to go for the version named \code{SCPH1001.BIN}. The file
 should be \emph{exactly} 512KB big. Check table~\ref{tab:checksums} to make
 sure you got the right one.
 
+\subsubsection{Brief History of BIOS}
+Above BIOS belonged to original North American console, which was released on 09 September 1995. Despite being named SCPH-1001, that console is based on SCPH-3000 (Japanese version, released on 21 July 1995), not SCPH-1000 (original Japanese console, released on 03 December 1994), Sony used odd numeration here.
+
 \subsection{Loading the BIOS}
 
 Once we got our BIOS the rest is pretty straightforward. We just read
@@ -841,15 +844,17 @@ At this point, let us tabulate the binary representation of the instruction
 \begin{table}[ht]
   \centering
 
-  \begin{tabular}{ l | l | l | l | l | l }
+  \begin{tabular}{ c | c | c | c | c | c }
     31..26 & 25..21 & 20..16 & 15..11 & 10..6  & 5..0  \\
     6 bits & 5 bits & 5 bits & 5 bits & 5 bits & 6 bits\\
     \hline
     \code{001111} & \code{00000} & \code{01000} & \code{00000}
-     & \code{00000} & {010011} \\
+                                      & \code{00000} & {010011} \\
+    opcode & - & register & \multicolumn{3}{c}{immediate} \\
+    \code{LUI} & - & \$8 & \multicolumn{3}{c}{19 or \code{0x13}} 
   \end{tabular}
 
-  \caption{Binary decomposition}
+  \caption{Binary decomposition.}
   \label{tab:bd}
 \end{table}
 

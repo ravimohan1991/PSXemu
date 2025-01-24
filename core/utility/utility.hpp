@@ -92,6 +92,13 @@ namespace util
 		return ((value & mask) ^ sign) - sign;
 	}
 
+    /**
+     * @brief
+     * Reads the supplied buffer at particular offset
+     *
+     * Used for reading little endian format data, for  instance reading off uint (datatype of Instr.value)
+     * where T is uint. See Bus::read
+     */
 	template <typename T>
 	static inline T read_memory(void* memory, int offset)
 	{

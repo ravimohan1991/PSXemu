@@ -1,14 +1,49 @@
 #pragma once
 #include <memory/range.h>
 
+/**
+ * @brief
+ * Data structure for the instruction obtained from reading.
+ * An instruction 0x3c080013 gets decoded to
+ * +---------------
+ * | lui $8 , 0x13
+ * +---------------
+ * meaning load 0x13 (or 19 in decimal) in 16 high bits of register 8.
+ *
+ * @note 0x3c080013 is the first instruction encountered on PS reset, from BIOS.
+ */
 struct Instr
 {
-    uint value;                     //debug
-    uint opcode() { return value >> 26; }     //Instr opcode
+    /**
+     * @brief
+     * The actual instruction obtained from reading
+     */
+    uint value;
+    
+    /**
+     * @brief
+     * Returns the bits [32:26] of instruction which is an operation
+     * for instance LUI (load upper immediate).
+     */
+    uint opcode() { return value >> 26; }
 
     //I-Type
+    /**
+     * @brief
+     *
+     */
     uint rs() { return (value >> 21) & 0x1F; }//Register Source
-    uint rt() { return(value >> 16) & 0x1F; }//Register Target
+    
+    /**
+     * @brief
+     * Returns register target (rt) index in bits [20:16]. For instance register 8.
+     */
+    uint rt() { return(value >> 16) & 0x1F; }
+    
+    /**
+     * @brief
+     * Returns the immediate value residing in bits [15:0]. For instance 19 or 0x13.
+     */
     uint imm() { return value & 0xFFFF; } //Immediate value
     
     /**

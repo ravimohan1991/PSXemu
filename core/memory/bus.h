@@ -101,7 +101,7 @@ public:
     
     /**
      * @brief
-     * Buffer for PS1 BIOS (firmware)
+     * Buffer for PS1 BIOS (firmware) file loading
      *
      * @note
      * The size is in bytes, 512 kilo bytes (ubyte is one unsigned byte)

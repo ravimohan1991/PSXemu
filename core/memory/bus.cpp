@@ -239,9 +239,8 @@ T Bus::read(uint addr)
         KR_CORE_INFO("Found abs_addr ({0:x}) in BIOSes range", abs_addr);
         
 		int offset = BIOS.offset(abs_addr);
-        KR_CORE_INFO("Offset {0}", offset);
-        KR_CORE_INFO("Read (bios) Memory with value {0}", util::read_memory<T>(bios, offset));
         
+        KR_CORE_INFO("Offset {0}", offset);
 		return util::read_memory<T>(bios, offset);
 	}
 	else if (SCRATCHPAD.contains(abs_addr))
