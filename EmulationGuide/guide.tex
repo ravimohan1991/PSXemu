@@ -97,7 +97,7 @@
 
 \title{Playstation Emulation Guide}
 \date{\today}
-\author{Lionel Flandrin}
+\author{Lionel Flandrin \and Ravi Mohan}
 
 \begin{document}
 
@@ -109,19 +109,18 @@
 \section{Introduction}
 
 This is my attempt at documenting my implementation of a PlayStation
-emulator from scratch. I'll write the document as I go and I'll try to
-explain as much as possible along the way. You can find the complete
-source of the emulator itself in my
-\href{https://github.com/simias/psx-rs}{GitHub repository}.
+emulator from Raphael's \href{https://github.com/raphaelthegreat/PSXemu}{repository}.
+I'll write the document as I go and I'll try to explain as much as
+possible along the way. You can find the complete source of the emulator
+itself in my C++ \href{https://github.com/ravimohan1991/PSXemu}{GitHub repository}.
+The original Rust program can be found
+\href{https://github.com/simias/psx-rs}{here}.
 
-Since my favourite passtime is to reinvent the wheel and recode things
-that already exist I decided that this time I might as well document
-it. This way maybe this time something useful will come out of it and
-it'll give me a motivation to finish it.
-
-I will be using the Rust programming language but this is not meant as
-a Rust tutorial and knowledge of the language shouldn't be necessary
-to follow this guide, although it won't hurt.
+Since my favourite passtime is to bring clarity  and recode things to
+C++ that already exist I decided that this time I might as well modify
+the Rust document to C++ code with my snippets. This way maybe this time
+something useful will come out of it and it'll give me a motivation to
+finish it.
 
 \subsection{Isn't emulation complicated?}
 
@@ -189,10 +188,12 @@ need to explain how a CPU works.
 
 A simple Von Neumann architecture looks like this: the CPU only sees a
 flat address space: an array of bytes. The PlayStation uses 32bit
-addresses so the CPU sees \code{1 << 32} addresses. In other words it
-can address 4GB of memory. That's why the PlayStation is said to be a
-32bit console (that and the fact that it uses 32bit registers in the
-CPU as we'll see in a minute).
+addresses so the CPU sees \code{1 << 32}\footnote{If you are not aware of
+  bit gymnastics, visit this \href{https://github.com/ravimohan1991/KarmaEngine/wiki/Bitwise-shift-operators}{page}.
+} addresses. In other words it can address 4GB of memory. That's why the
+PlayStation is said to be a 32bit console (that and the fact that it uses
+32bit registers\footnote{ For instance see code \ref{code:cpupc}.} in
+the CPU as we'll see in a minute).
 
 This address space contains all the external ressources the CPU can
 access: the RAM of course but also the various peripherals (GPU,
@@ -263,12 +264,15 @@ With all that in mind we can finally start writing some code!
 
 Here's what the CPU state looks like at that point:
 
-\begin{lstlisting}
+\begin{lstlisting}[label={code:cpupc}]
+using uint = std::uint32_t;
+  
 /// CPU state
-pub struct Cpu {
-    /// The program counter register
-    pc: u32,
-}
+class CPU
+{
+public:
+      uint pc, current_pc, next_pc;       
+}   
 \end{lstlisting}
 
 And here's the implementation of our CPU cycle described above:
