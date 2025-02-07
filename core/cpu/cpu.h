@@ -2,6 +2,7 @@
  * @file cpu.h
  */
 #pragma once
+#include <stdafx.hpp>
 #include <memory/bus.h>
 #include <cpu/gte.h>
 #include <cpu/instr.hpp>

@@ -218,7 +218,7 @@ doesn't care. If you want to run code from the controller input port
 I'm sure the console will let you. Probably not very useful but it's
 all the same as far as the CPU is concerned.
 
-So somewhere in this 4GB address space there's the next instruction
+So somewhere in this 4GB address space there's the \emph{next instruction}
 for the CPU to run. How does it know the address of this instruction?
 By using a register of course!
 
@@ -278,33 +278,37 @@ public:
 And here's the implementation of our CPU cycle described above:
 
 \begin{lstlisting}
-impl Cpu {
+void CPU::tick()
+{
+    // Log program counter
+    KR_CORE_INFO("Inside CPU::tick");
+    KR_CORE_INFO("PC: 0x{0:x}", pc);
+    
+    /* Fetch next instruction. */
+    KR_CORE_INFO("Fetching next instruction");
+    instr.value = read(pc);
+    
+    /* and Update PC. */
+    current_pc = pc;
+    pc = next_pc;
+    next_pc += 4;
 
-    pub fn run_next_instruction(&mut self) {
-        let pc = self.pc;
-
-        // Fetch instruction at PC
-        let instruction = self.load32(pc);
-
-        // Increment PC to point to the next instruction.
-        self.pc = pc.wrapping_add(4);
-
-        self.decode_and_execute(instruction);
-    }
+    /* Execute it. */
+    auto& handler = lookup[instr.opcode()];
 }
 \end{lstlisting}
 
-In Rust \code{wrapping\_add} means that we want the PC to
-wrap back to 0 in case of an overflow (i.e. \code{0xfffffffc + 4 =>
+If we were using language like Rust, we would have used \code{wrapping\_add},
+meaning that we want the PC to wrap back to 0 in case of an overflow (i.e. \code{0xfffffffc + 4 =>
 0x00000000}). We'll see that most CPU operations wrap on overflow
 (although some instructions catch those overflows and generate an
 exception, we'll see that later).
 
-If you're coding in C you don't need to worry about that if you use
+Since we're coding in C++ we don't need to worry about that because we use
 \code{uint32\_t} since the C standard mandates that unsigned overflow wraps
 around in this fashion. Rust however says that overflows are undefined
 and will generate an error in debug builds if an unchecked overflow is
-detected, that's why I need to write \code{pc.wrapping\_add(4)} instead of
+detected, that's why I (Lionel) need to write \code{pc.wrapping\_add(4)} instead of
 \code{pc + 4}.
 
 We now finally have some code but it doesn't build yet.
@@ -314,8 +318,11 @@ piece of code:
 
 \begin{itemize}
  \item What's the initial value of PC when starting up?
- \item How do we implement the \code{fetch32} function?
- \item How do we implement the \code{decode\_and\_execute} function?
+ \item How do we implement the \code{reac(pc)} function?
+ \item How do we implement the \code{lookup} table?
+   \begin{lstlisting}
+     std::unordered_map<uint, CPUfunc> lookup;
+   \end{lstlisting}
 \end{itemize}
 
 \subsubsection{Reset value of the PC}
@@ -343,7 +350,7 @@ initialize the logic.
 Knowing this it's pretty obvious that the reset value of the
 PC is very important since it's going to tell the CPU where
 it should start running the code. It basically defines the location of
-the "main" function of the console's kernel.
+the ``main" function of the console's kernel.
 
 The docs say that the reset value of PC is
 \code{0xbfc00000}. In the playstation memory map that's the
@@ -354,16 +361,22 @@ Now that we know where our story starts we can write our CPU
 initializer:
 
 \begin{lstlisting}
-impl Cpu {
+void CPU::reset()
+{
+    /* Reset registers and PC. */
+    pc = 0xbfc00000;
+    next_pc = pc + 4;
+    current_pc = 0;
+    hi = 0; lo = 0;
 
-    pub fn new() -> Cpu {
-     	Cpu {
-            // PC reset value at the beginning of the BIOS
-            pc: 0xbfc00000,
-        }
-    }
+    /* Clear general purpose registers. */
+    memset(registers, 0, 32 * sizeof(uint));
 
-    //...
+    /* Clear CPU state. */
+    is_branch = false;
+    is_delay_slot = false;
+    took_branch = false;
+    in_delay_slot_took_branch = false;
 }
 \end{lstlisting}
 

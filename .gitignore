@@ -256,3 +256,9 @@ KarmaLightHouse/
 *.out
 
 *.toc
+
+EmulationGuide/guide.bbl
+
+EmulationGuide/guide.blg
+
+EmulationGuide/guide.pdf
