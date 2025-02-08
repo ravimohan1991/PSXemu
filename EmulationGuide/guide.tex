@@ -427,9 +427,14 @@ addresses \code{0x1fc00000}(KUSEG) and \code{0x9fc00000}(KSEG0).
 
 What's the point of having those mirrored regions? What's the
 difference between KUSEG and KSEG1 for instance? Those are memory
-regions which are used to specify certain attributes of the memory
-access. On the Playstation hardware it's mostly used to specify
-whether the access is cached or not.
+regions (segments) which are used to specify certain attributes of the \emph{memory
+access}. On the Playstation hardware it's mostly used to specify
+whether the memory access is cached\footnote{Cache memory essentially makes
+  the main memory appear to the processor to be faster than it really is.
+  The cache is a smaller, faster memory which stores copies of the data
+  from the most frequently used main memory locations. As long as most memory
+  accesses are to cached memory locations, the average latency of memory
+  accesses will be closer to the cache latency than to the latency of main memory.} or not.
 
 For now we're going to ignore regions and treat all mappings the same,
 we'll study them more closely later on.
@@ -460,17 +465,59 @@ will need an interconnect to dispatch the load/store operations to the
 correct peripheral.
 
 I don't know if the PlayStation really has a hardware
-interconnect. The CPU could just "broadcast" the read/write operations
+interconnect. The CPU could just ``broadcast'' the read/write operations
 on the system bus and the peripherals would check the address and only
 answer if it's for them. However this design would be inefficient in
 software: we'd need to iterate over the peripherals for each
 transaction until we find the correct receiver.
 
-Instead we're just going to implement a "switchboard" that will match
-the address to the correct peripheral and forward it there.
+Instead we're just going to implement a ``switchboard'' that will match
+the address to the correct peripheral and forward it there.  In C++ the
+matching can be implemented like so
+
+\begin{lstlisting}
+        /* Memory ranges. */
+	const Range RAM = Range(0x00000000, 2 * 1024 * 1024LL);
+	const Range BIOS = Range(0x1fc00000, 512 * 1024LL);
+	const Range TIMERS = Range(0x1f801100, 0x30);
+	const Range RAM_SIZE = Range(0x1f801060, 4);
+	const Range SPU_RANGE = Range(0x1f801c00, 640);
+	const Range EXPANSION_2 = Range(0x1f802000, 66);
+	const Range EXPANSION_1 = Range(0x1f000000, 512 * 1024);
+	const Range CACHE_CONTROL = Range(0xfffe0130, 4);
+	const Range SYS_CONTROL = Range(0x1f801000, 36);
+	const Range CDROM = Range(0x1f801800, 0x4);
+	const Range PAD_MEMCARD = Range(0x1f801040, 15);
+	const Range DMA_RANGE = Range(0x1f801080, 0x80LL);
+	const Range SCRATCHPAD = Range(0x1f800000, 1024LL);
+      \end{lstlisting}
+      where \code{Range(,)} is defined like so
+      
+\begin{lstlisting}
+ struct Range
+ {
+	Range(uint begin, ulong size) :
+		start(begin), length(size) {}
+
+	inline bool contains(uint addr) const 
+	{
+		return (addr >= start && addr < start + length);
+	}
+
+	inline uint offset(uint addr) const 
+	{
+		return addr - start;
+	}
+
+public:
+	uint start = 0; 
+	ulong length = 0;
+};
+\end{lstlisting}
 
 Since the first thing the emulator will run is the BIOS we'll use it
-as our first peripheral.
+as our first peripheral\footnote{We note that BIOS is matched with address
+ begining from \code{0x1fc00000} corresponding to memory segment \code{KUSEG}.}.
 
 \subsection{The BIOS}
 
