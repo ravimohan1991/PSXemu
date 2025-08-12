@@ -199,7 +199,7 @@ This address space contains all the external ressources the CPU can
 access: the RAM of course but also the various peripherals (GPU,
 controllers, CD drive, BIOS...). That's called
 \href{https://en.wikipedia.org/wiki/Memory-mapped_I/O}{memory mapped
-  IO}. Note that in this context "memory" doesn't mean RAM. Rather it
+  IO}. Note that in this context ``memory" doesn't mean RAM. Rather it
 means that you access peripherals as if they were memory (instead of
 using dedicated instructions for instance). From the point of view of
 the CPU, everything is just a big array of bytes and it doesn't really
@@ -293,8 +293,19 @@ void CPU::tick()
     pc = next_pc;
     next_pc += 4;
 
-    /* Execute it. */
+    /* Look up the C++ function (implementing some PS1 functionality) corresponding to opcode Execute it. */
     auto& handler = lookup[instr.opcode()];
+
+    if (handler != nullptr)
+    {
+        KR_CORE_INFO("Executing legal instruction");
+       /* Let's boogie*/
+        handler();
+    }
+    else
+    {
+        exception(ExceptionType::IllegalInstr);
+    }
 }
 \end{lstlisting}
 
