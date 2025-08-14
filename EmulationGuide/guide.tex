@@ -371,7 +371,7 @@ in the next section).
 Now that we know where our story starts we can write our CPU
 initializer:
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={CPU reset code.}, label={code::cpureset}]
 void CPU::reset()
 {
     /* Reset registers and PC. */
@@ -645,6 +645,8 @@ implementing \code{BUS::read()} function
   template<typename T>
   T Bus::read(uint addr)
   {
+    /* Map the memory ranges. */
+    uint abs_addr = physical_addr(addr);// map KUSEG, KSEG0, KSEG1 regions to unique address
     ...
     // Interconnect heuristic
     else if (RAM.contains(abs_addr))
@@ -766,97 +768,77 @@ transaction.
 And we did just that in code \ref{code:interconnectbusread}. We have shown
 two peripherals BIOS and RAM.  There are more in the \href{https://github.com/ravimohan1991/PSXemu/blob/6bb673613c2d8eac6d9113fa6fa369346028a8b5/core/memory/bus.cpp#L215-L288}{code}.
 
-\subsection{Gluing the interconnect to the CPU}
+\subsection{Some informative logs}
 
-The only thing left before we can finally build our code is gluing the
-Interconnect with the Cpu.
-
-We add an \code{inter} member to the \code{struct Cpu} and take an
-\code{Interconnect} object in the constructor:
-
-\begin{lstlisting}
-/// CPU state
-pub struct Cpu {
-    /// The program counter register
-    pc: u32,
-    /// Memory interface
-    inter: Interconnect,
-}
-
-impl Cpu {
-
-    pub fn new(inter: Interconnect) -> Cpu {
-        Cpu {
-            // PC reset value at the beginning of the BIOS
-            pc: 0xbfc00000,
-            inter: inter,
-        }
-    }
-
-    // ...
-}
-\end{lstlisting}
-
-We can also implement the \code{load32} function for the CPU which
-will just call the interconnect.
-
-\begin{lstlisting}
-impl Cpu {
-    //...
-
-    /// Load 32bit value from the interconnect
-    fn load32(&self, addr: u32) -> u32 {
-        self.inter.load32(addr)
-    }
-}
-\end{lstlisting}
-
-We're still lacking the \code{decode\_and\_execute} function, let's use a
-placeholder function that just panics for now:
-
-\begin{lstlisting}
-impl Cpu {
-    //...
-
-    fn decode_and_execute(&mut self, instruction: u32) {
-        panic!("Unhandled instruction {:08x}",
-               instruction);
-    }
-}
-\end{lstlisting}
-
-Finally we can instantiate everything in our \code{main} function:
-
-\begin{lstlisting}
-fn main() {
-    let bios = Bios::new(&Path::new("roms/SCPH1001.BIN")).unwrap();
-
-    let inter = Interconnect::new(bios);
-
-    let mut cpu = Cpu::new(inter);
-
-    loop {
-        cpu.run_next_instruction();
-    }
-}
-\end{lstlisting}
-
-I've hardcoded the BIOS path for now. It would be better to read it
-from the command line, a config file or even some fancy dialog window
-but it'll do nicely for now.
-
-We should now be able to build the code. When I run it, assuming that
-the BIOS file was found at the correct location I get:
+Since we have basic working of CPU, let us track the execution state
+of our PS1 emulator by appropriate logging
 
 \begin{verbatim}
-thread `<main>' panicked at 'Unhandled instruction 3c080013'
+[12:31:58][info] KARMA: Initialized Log
+[CDROM] Unhandled disk format!
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc00000
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc00000 using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc00000 -> Physical address: 0x1fc00000
+[12:31:59][info] KARMA: Found abs_addr (1fc00000) in BIOSes range
+[12:31:59][info] KARMA: Offset 0
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 1007157267, 0x3c080013
+[12:31:59][info] KARMA: | opcode: 15, 0xf
+[12:31:59][info] KARMA: | rs: 0, 0x0
+[12:31:59][info] KARMA: | rt: 8, 0x8
+[12:31:59][info] KARMA: | imm: 19, 0x13
+[12:31:59][info] KARMA: | imms: 19, 0x13
+[12:31:59][info] KARMA: | rd: 0, 0x0
+[12:31:59][info] KARMA: | sa: 0, 0x0
+[12:31:59][info] KARMA: | addr: 524307, 0x80013
+[12:31:59][info] KARMA: | id: 3, 0x3
+[12:31:59][info] KARMA: +-------------------------------------------------------
 \end{verbatim}
 
-As expected the \code{decode\_and\_execute} function died on us but
-we managed to fetch an instruction. If you've been using the same BIOS
-file as me you should have exactly the same value of
-\code{0x3c080013}. If you got an other value something is wrong with
-your code. In particular if you end up with \code{0x1300083c} it
+Few things to note
+
+\begin{enumerate}
+\item Program Counter, PC, is initially set to \code{0xbfc00000}, courtesy \code{CPU::reset()}
+  \ref{code::cpureset}.
+\item In order to solve our issue of having multiple mappings, at different addresses,
+  for the same peripherals mirrored in different regions (see \ref{tab:mmap}), we want to compute the unique
+  physical address corresponding to memory access (contained in PC).  The unique physical address is
+  derived by masking the virtual CPU address to the lower 29 bits, which effectively removes the
+  region prefix (KUSEG/KSEG0/KSEG1).  For instance \code{0xbfc00000}, in KSEG1 region, is mapped to
+  \code{0x1fc00000}.
+  \begin{lstlisting}
+    uint Bus::physical_addr(uint addr)
+    {
+	// Index address space in 512MB chunks
+	uint index = addr >> 29;
+	return (addr & region_mask[index]);
+      }
+  \end{lstlisting}
+  where \code{region\_mask} is defined like so
+  \begin{lstlisting}
+    	const uint region_mask[8] = {
+		// KUSEG: 2048MB
+		0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+		// KSEG0: 512MB
+		0x7fffffff,
+		// KSEG1: 512MB
+		0x1fffffff,
+		// KSEG2: 1024MB
+		0xffffffff, 0xffffffff,
+	};
+      \end{lstlisting}
+\item At the physical address \code{0x1fc000000} we read useful instruction
+  \code{0x3c080013}.
+\item Rest of the logging is for various registers, PS1 opcode, and all that.
+\end{enumerate}
+
+If you've been using the same BIOS file as me you should have exactly
+the same value of \code{0x3c080013}. If you got an other value something
+is wrong with your code. In particular if you end up with \code{0x1300083c} it
 means you're erroneously reading in big-endian.
 
 \subsection{Instruction decoding}

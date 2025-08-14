@@ -60,11 +60,16 @@ Bus::Bus(const std::string& bios_path)
 	//glfwSetKeyCallback(renderer->window, &Bus::key_callback);
 }
 
-/* Get the physical memory address from the virtual one. */
+/**
+ * Get the physical memory address from the virtual one.
+ *
+ * Mask a CPU address to remove the region bits.
+ */
 uint Bus::physical_addr(uint addr)
 {
-    uint index = addr >> 29;
-    return (addr & region_mask[index]);
+	// Index address space in 512MB chunks
+	uint index = addr >> 29;
+	return (addr & region_mask[index]);
 }
 
 /* Used for keyboard input detection. */
@@ -160,7 +165,7 @@ void Bus::tick()
 {
 	/* Tick the CPU. */
 	for (int i = 0; i < 100; i++)
-    {
+	{
 		cpu->tick();
 	}
 
@@ -214,76 +219,76 @@ void Bus::irq(Interrupt interrupt) const
 template<typename T>
 T Bus::read(uint addr)
 {
-    KR_CORE_INFO("------ Bus read ------");
-    
+	KR_CORE_INFO("------ Bus read ------");
+
 	/* Map the memory ranges. */
 	uint abs_addr = physical_addr(addr);
-    
-    KR_CORE_INFO("BIOS address: 0x{0:x} -> Physical address: 0x{1:x}", addr, abs_addr);
+
+	KR_CORE_INFO("BIOS address: 0x{0:x} -> Physical address: 0x{1:x}", addr, abs_addr);
 
 	/* HACK: Skip reading SPU_DELAY. */
 	if (abs_addr == 0x1F801014) return 0;
 
 	if (TIMERS.contains(abs_addr))
-    {
+	{
 		ubyte timer = (abs_addr >> 4) & 3;
 		return timers[timer]->read(abs_addr);
 	}
 	else if (RAM.contains(abs_addr))
-    {
+	{
 		int offset = RAM.offset(abs_addr);
 		return util::read_memory<T>(ram, offset);
 	}
 	else if (BIOS.contains(abs_addr))
-    {
-        KR_CORE_INFO("Found abs_addr ({0:x}) in BIOSes range", abs_addr);
-        
+	{
+		KR_CORE_INFO("Found abs_addr ({0:x}) in BIOSes range", abs_addr);
+
 		int offset = BIOS.offset(abs_addr);
-        
-        KR_CORE_INFO("Offset {0}", offset);
+
+		KR_CORE_INFO("Offset {0}", offset);
 		return util::read_memory<T>(bios, offset);
 	}
 	else if (SCRATCHPAD.contains(abs_addr))
-    {
+	{
 		int offset = SCRATCHPAD.offset(abs_addr);
 		return util::read_memory<T>(scratchpad, offset);
 	}
 	else if (EXPANSION_1.contains(abs_addr))
-    {
+	{
 		return 0xff;
 	}
 	else if (CDROM.contains(abs_addr))
-    {
+	{
 		if (std::is_same<T, ubyte>::value)
 			return cddrive->read(abs_addr);
 	}
 	else if (GPU_RANGE.contains(abs_addr))
-    {
+	{
 		return gpu->read(abs_addr);
 	}
 	else if (PAD_MEMCARD.contains(abs_addr))
-    {
+	{
 		return controller->read<T>(abs_addr);
 	}
 	else if (DMA_RANGE.contains(abs_addr))
-    {
+	{
 		return dma->read(abs_addr);
 	}
 	else if (SPU_RANGE.contains(abs_addr))
-    {
+	{
 		return spu->read<T>(abs_addr);
 	}
 	else if (RAM_SIZE.contains(abs_addr))
-    {
+	{
 		return 0x00000888;
 	}
 	else if (INTERRUPT.contains(abs_addr))
-    {
+	{
 		return cpu->read_irq(abs_addr);
 	}
 	else
-    {
-        printf("[MEM] Emulator::read: unhandled read to address: 0x%x with width %lu.\n", abs_addr, sizeof(T));
+	{
+		printf("[MEM] Emulator::read: unhandled read to address: 0x%x with width %lu.\n", abs_addr, sizeof(T));
 		return 0xFFFFFFFF;
 	}
 }

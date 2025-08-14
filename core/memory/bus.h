@@ -63,12 +63,18 @@ public:
 	template <typename T = uint>
 	void write(uint addr, T data);
 
-    /**
-     * @brief
-     * Ticking of ``Bus``
-     */
+	/**
+	 * @brief
+	 * Ticking of ``Bus``
+	 */
 	void tick();
 	void irq(Interrupt interrupt) const;
+	
+	/**
+	 * Get the physical memory address from the virtual one.
+	 *
+	 * Mask a CPU address to remove the region bits.
+	 */
 	uint physical_addr(uint addr);
 	
 	bool loadEXE(std::string test, PSEXELoadInfo& info);
@@ -109,11 +115,22 @@ public:
 	ubyte bios[512 * 1024] = {};
 	ubyte ex1[512 * 1024] = {};
 	
-	/* Mask repeated memory regions. */
+	/**
+	 * Mask repeated memory regions.
+	 *
+	 * Mask array used to strip the region bits of the address . The
+	 * mask is selected using the 3 MSBs of the address so each entry
+	 * effectively matches 512kB of the address space . KSEG2 i s not
+	 * touched since it doesn’t share anything with the other regions
+	 */
 	const uint region_mask[8] = {
-		0xffffffff, 0xffffffff,
-		0xffffffff, 0xffffffff,
-		0x7fffffff, 0x1fffffff,
+		// KUSEG: 2048MB
+		0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+		// KSEG0: 512MB
+		0x7fffffff,
+		// KSEG1: 512MB
+		0x1fffffff,
+		// KSEG2: 1024MB
 		0xffffffff, 0xffffffff,
 	};
 
