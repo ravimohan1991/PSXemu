@@ -277,7 +277,7 @@ public:
 
 And here's the implementation of our CPU cycle described above:
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Ticking CPU.}, label={code:cputick}]
 void CPU::tick()
 {
     // Log program counter
@@ -486,8 +486,8 @@ Instead we're just going to implement a ``switchboard'' that will match
 the address to the correct peripheral and forward it there.  In C++ the
 matching can be implemented like so
 
-\begin{lstlisting}
-        /* Memory ranges. */
+\begin{lstlisting}[caption={C++ code for memory range.}, label={code:memoryrangemap}]
+	/* Memory ranges. */
 	const Range RAM = Range(0x00000000, 2 * 1024 * 1024LL);
 	const Range BIOS = Range(0x1fc00000, 512 * 1024LL);
 	const Range TIMERS = Range(0x1f801100, 0x30);
@@ -501,8 +501,8 @@ matching can be implemented like so
 	const Range PAD_MEMCARD = Range(0x1f801040, 15);
 	const Range DMA_RANGE = Range(0x1f801080, 0x80LL);
 	const Range SCRATCHPAD = Range(0x1f800000, 1024LL);
-      \end{lstlisting}
-      where \code{Range(,)} is defined like so
+\end{lstlisting}
+where \code{Range(,)} is defined like so
       
 \begin{lstlisting}
  struct Range
@@ -586,67 +586,112 @@ Above BIOS belonged to original North American console, which was released on 09
 \subsection{Loading the BIOS}
 
 Once we got our BIOS the rest is pretty straightforward. We just read
-the file into a 512KB buffer:
+the file into a 512KB buffer where the buffer is declared in BUS class like
+so:
 
 \begin{lstlisting}
-/// BIOS image
-pub struct Bios {
-    /// BIOS memory
-    data: Vec<u8>
-}
+  class Bus
+  {
+    ...
+    public:
+    /**
+     * @brief
+     * Buffer for PS1 BIOS (firmware) file loading
+     *
+     * @note
+     * The size is in bytes, 512 kilo bytes (ubyte is one unsigned byte)
+     */
+     ubyte bios[512 * 1024] = {};
+     ...
+  }
+\end{lstlisting}
 
-impl Bios {
+The file is loaded like so
+\begin{lstlisting}
+  Bus::Bus(const std::string& bios_path)
+  {
+    ...
+    /* Open BIOS file into 512 kb (for PS1) buffer. */
+    util::read_binary_file(bios_path, 512 * 1024, bios);
+    ...
+  }
+\end{lstlisting}
+where \code{read\_binary\_file} is defined like so
 
-    /// Load a BIOS image from the file located at `path`
-    pub fn new(path: &Path) -> Result<Bios> {
-
-        let file = try!(File::open(path));
-
-        let mut data = Vec::new();
-
-        // Load the BIOS
-        try!(file.take(BIOS_SIZE).read_to_end(&mut data));
-
-        if data.len() == BIOS_SIZE as usize {
-            Ok(Bios { data: data })
-        } else {
-            Err(Error::new(ErrorKind::InvalidInput,
-                           "Invalid BIOS size"))
-        }
-    }
-}
-
-/// BIOS images are always 512KB in length
-const BIOS_SIZE: u64 = 512 * 1024;
+\begin{lstlisting}
+    /**
+     * @brief
+     * Read (or load) a file from disk to target buffer of specified size (?)
+     *
+     * @param file                              The relative or full path of the file to be loaded
+     * @param size                              The specified cumulative size of buffer elements (in bytes)
+     *
+     * @param target                          The pointer to buffer memory block where the data read will be stored
+     */
+     static inline void read_binary_file(const std::string& file, ulong size, ubyte* target)
+     {
+	             FILE* in = fopen(file.c_str(), "rb");
+	             fread(target, 1, size, in);
+	             fclose(in);
+     }
 \end{lstlisting}
 
 We also need to be able to read data from the BIOS. The CPU wants to
 read 32bit of data to load the instructions so let's start by
-implementing load32:
+implementing \code{BUS::read()} function
 
-\begin{lstlisting}
-impl Bios {
-    // ...
-
-    /// Fetch the 32bit little endian word at `offset`
-    pub fn load32(&self, offset: u32) -> u32 {
-        let offset = offset as usize;
-
-        let b0 = self.data[offset + 0] as u32;
-        let b1 = self.data[offset + 1] as u32;
-        let b2 = self.data[offset + 2] as u32;
-        let b3 = self.data[offset + 3] as u32;
-
-        b0 | (b1 << 8) | (b2 << 16) | (b3 << 24)
+\begin{lstlisting}[caption={Interconnect implementation for reading}, label={code:interconnectbusread}]
+  /* Read memory at address. */
+  template<typename T>
+  T Bus::read(uint addr)
+  {
+    ...
+    // Interconnect heuristic
+    else if (RAM.contains(abs_addr))
+    {
+	int offset = RAM.offset(abs_addr);
+	return util::read_memory<T>(ram, offset);
     }
-}
+    else if (BIOS.contains(abs_addr))
+    {   
+	int offset = BIOS.offset(abs_addr);// abs_addr - start of bios which is 0x1fc00000
+	return util::read_memory<T>(bios, offset);
+    }
+    ...  
+  }
 \end{lstlisting}
 
-A few things to note: \code{offset}, as its name implies, is not the
+Here we see if the supplied address is in the bioses memory range, defined in \ref{code:memoryrangemap},
+then the control proceeds to read the bios ``peripheral'' and obtains the instruction for execution\footnote{Here
+T is uint.}.
+
+\begin{lstlisting}
+    /**
+     * @brief
+     * Reads the supplied buffer at particular offset
+     *
+     * Used for reading little endian format data, for  instance reading off uint (datatype of Instr.value)
+     * where T is uint. See Bus::read
+     */
+	template <typename T>
+	static inline T read_memory(void* memory, int offset)
+	{
+		T* data = (T*)memory;
+		int index = offset / sizeof(T);
+		return data[index];
+	}
+\end{lstlisting}
+
+A few things to note:
+\begin{enumerate}
+\item \code{offset}, as its name implies, is not the
 absolute address used by the CPU, it's just the offset in the BIOS
 memory range. Remember that the BIOS is mapped in multiple regions so
 we'll handle that in the generic interconnect code. Each peripheral
 will just handle offsets in its address range.
+\item Since I have been running the code on Apple M1 chip, the default
+endiness, which is little-endian, just works.  
+\end{enumerate}
 
 In the comment I mention that we read the word in \emph{little
   endian}. That's important. If you've never had to worry about
@@ -678,8 +723,11 @@ the BIOS.
 
 \subsection{The interconnect}
 
-We now have an embryo of a CPU and our first device ready to talk to
-each other. We just need to figure out how to link them together.
+We now have an primitive form of BUS and our first device (BIOS) ready
+to talk to CPU. We just need to show how they are linked.  The \code{read()}
+function of CPU in \ref{code:cputick} calls the \code{BUS::read()} of
+\ref{code:interconnectbusread} which allows the communication between
+the two.
 
 At that point we could have the CPU talk directly to the BIOS, after
 all it's our only device. Obviously that won't work for very long
@@ -715,94 +763,8 @@ have to sequentially match the address against each mapping until we
 get a match. Then we can let the selected peripheral handle the
 transaction.
 
-Let's do just that:
-
-\begin{lstlisting}
-/// Global interconnect
-pub struct Interconnect {
-    /// Basic Input/Output memory
-    bios: Bios,
-}
-
-impl Interconnect {
-    pub fn new(bios: Bios) -> Interconnect {
-        Interconnect {
-            bios: bios,
-        }
-    }
-}
-\end{lstlisting}
-
-I've decided to store the BIOS directly in the interconnect
-\code{struct}. We'll append the other peripherals there as we
-implement them. We are going to store the interconnect inside the
-\code{struct Cpu} which will give us a device tree with the CPU at
-the top. It makes the data paths pretty simple: everything goes \emph{from}
-the CPU \emph{to} the peripherals. It's easier to reason about than a full
-``everybody sees everybody'' architecture in my opinion but it might
-prove limiting as we progress. We'll see if we need to revise that
-later.
-
-Now we can finally implement the \code{load32} function that the CPU
-will be using. I don't like having hardcoded constants all over the
-place so I'm going to tie the address ranges to nice symbolic names:
-
-\begin{lstlisting}
-mod map {
-    struct Range(u32, u32);
-
-    impl Range {
-        /// Return `Some(offset)` if addr is contained in `self`
-        pub fn contains(self, addr: u32) -> Option<u32> {
-            let Range(start, length) = self;
-
-            if addr >= start && addr < start + length {
-                Some(addr - start)
-            } else {
-                None
-            }
-        }
-    }
-
-    pub const BIOS: Range = Range(0xbfc00000, 512 * 1024);
-}
-\end{lstlisting}
-
-If you're not familiar with rust what this does is create a new type
-\code{Range} which is a tuple of two values: the start address and length
-of the mapping.
-
-I also declare a \code{contains} methods which takes an address and
-returns \code{Some(offset)} if the address is within the range,
-\code{None} otherwise. You can think of it as a form of multiple
-return values with some nice type-safety on top.
-
-Finally I declare our first range for the BIOS.
-
-Now for the load32 function:
-
-\begin{lstlisting}
-impl Interconnect {
-    //...
-
-    /// Load 32bit word at `addr`
-    pub fn load32(&self, addr: u32) -> u32 {
-
-        if let Some(offset) = map::BIOS.contains(addr) {
-            return self.bios.load32(offset);
-        }
-
-        panic!("unhandled fetch32 at address {:08x}", addr);
-    }
-}
-\end{lstlisting}
-
-The \code{if let} syntax is an other rust nicety: if the
-\code{contains} function returns \code{Some(offset)} we enter the
-body of the if with \code{offset} bound to a temporary variable. If
-\code{contains} returns \code{None} on the other hand the
-\code{if} is refuted and we don't enter the body and go straight to
-the \code{panic!} command which will make our emulator crash.
+And we did just that in code \ref{code:interconnectbusread}. We have shown
+two peripherals BIOS and RAM.  There are more in the \href{https://github.com/ravimohan1991/PSXemu/blob/6bb673613c2d8eac6d9113fa6fa369346028a8b5/core/memory/bus.cpp#L215-L288}{code}.
 
 \subsection{Gluing the interconnect to the CPU}
 
