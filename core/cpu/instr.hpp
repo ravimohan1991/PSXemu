@@ -22,7 +22,7 @@ struct Instr
     
     /**
      * @brief
-     * Returns the bits [32:26] of instruction which is an operation
+     * Returns the bits [31:26] of instruction which is an operation (opcode)
      * for instance LUI (load upper immediate).
      */
     uint opcode() { return value >> 26; }

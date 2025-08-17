@@ -448,7 +448,7 @@ whether the memory access is cached\footnote{Cache memory essentially makes
   accesses will be closer to the cache latency than to the latency of main memory.} or not.
 
 For now we're going to ignore regions and treat all mappings the same,
-we'll study them more closely later on.
+we'll study them more closely later on (see \ref{mirrorresolve}).
 
 \begin{table}[ht]
   \centering
@@ -725,7 +725,7 @@ the BIOS.
 
 \subsection{The interconnect}
 
-We now have an primitive form of BUS and our first device (BIOS) ready
+We now have an primitive form of BUS and our first device (BIOS) is ready
 to talk to CPU. We just need to show how they are linked.  The \code{read()}
 function of CPU in \ref{code:cputick} calls the \code{BUS::read()} of
 \ref{code:interconnectbusread} which allows the communication between
@@ -804,7 +804,7 @@ Few things to note
 \begin{enumerate}
 \item Program Counter, PC, is initially set to \code{0xbfc00000}, courtesy \code{CPU::reset()}
   \ref{code::cpureset}.
-\item In order to solve our issue of having multiple mappings, at different addresses,
+\item\label{mirrorresolve} In order to solve our issue of having multiple mappings, at different addresses,
   for the same peripherals mirrored in different regions (see \ref{tab:mmap}), we want to compute the unique
   physical address corresponding to memory access (contained in PC).  The unique physical address is
   derived by masking the virtual CPU address to the lower 29 bits, which effectively removes the
@@ -816,7 +816,7 @@ Few things to note
 	// Index address space in 512MB chunks
 	uint index = addr >> 29;
 	return (addr & region_mask[index]);
-      }
+    }
   \end{lstlisting}
   where \code{region\_mask} is defined like so
   \begin{lstlisting}
@@ -833,13 +833,14 @@ Few things to note
       \end{lstlisting}
 \item At the physical address \code{0x1fc000000} we read useful instruction
   \code{0x3c080013}.
-\item Rest of the logging is for various registers, PS1 opcode, and all that.
+\item Rest of the logging is for various target register, PS1 opcode, and all that.  We
+  will see how to parse that into useful assembly type language in next section.
 \end{enumerate}
 
 If you've been using the same BIOS file as me you should have exactly
-the same value of \code{0x3c080013}. If you got an other value something
-is wrong with your code. In particular if you end up with \code{0x1300083c} it
-means you're erroneously reading in big-endian.
+the same value of the first instruction, \code{0x3c080013}. If you got an
+other value something is wrong with your code. In particular if you end
+up with \code{0x1300083c} it means you're erroneously reading in big-endian.
 
 \subsection{Instruction decoding}
 
@@ -910,62 +911,100 @@ encoding for other MIPS instructions you'll see that it's fairly
 regular, for instance immediate values are always stored in the LSBs:
 
 \begin{lstlisting}
-struct Instruction(u32);
+/**
+ * @brief
+ * Data structure for the instruction obtained from reading.
+ * An instruction 0x3c080013 gets decoded to
+ * +---------------
+ * | lui $8 , 0x13
+ * +---------------
+ * meaning load 0x13 (or 19 in decimal) in 16 high bits of register 8.
+ *
+ * @note 0x3c080013 is the first instruction encountered on PS reset, from BIOS.
+ */
+struct Instr
+{
+    /**
+     * @brief
+     * The actual instruction obtained from reading
+     */
+    uint value;
+    
+    /**
+     * @brief
+     * Returns the bits [31:26] of instruction which is an operation (opcode)
+     * for instance LUI (load upper immediate).
+     */
+    uint opcode() { return value >> 26; }
 
-impl Instruction {
-    /// Return bits [31:26] of the instruction
-    fn function(self) -> u32 {
-        let Instruction(op) = self;
+    //I-Type
+    /**
+     * @brief
+     *
+     */
+    uint rs() { return (value >> 21) & 0x1F; }//Register Source
+    
+    /**
+     * @brief
+     * Returns register target (rt) index in bits [20:16]. For instance register 8.
+     */
+    uint rt() { return(value >> 16) & 0x1F; }
+    
+    /**
+     * @brief
+     * Returns the immediate value residing in bits [15:0]. For instance 19 or 0x13.
+     */
+    uint imm() { return value & 0xFFFF; } //Immediate value
+    
+    /**
+     * @brief
+     * Immediate value sign extended
+     */
+    uint imm_s() { return(uint)(int16_t)imm(); }
 
-        op >> 26
-    }
+    //R-Type
+    uint rd() { return(value >> 11) & 0x1F; }
+    uint sa() { return(value >> 6) & 0x1F; } //Shift Amount
+    uint function() { return value & 0x3F; }  //Function
 
-    /// Return register index in bits [20:16]
-    fn t(self) -> u32 {
-        let Instruction(op) = self;
+    //J-Type                                       
+    uint addr() { return value & 0x3FFFFFF; } //Target Address
 
-        (op >> 16) & 0x1f
-    }
-
-    /// Return immediate value in bits [16:0]
-    fn imm(self) -> u32 {
-        let Instruction(op) = self;
-
-        op & 0xffff
-    }
-}
+    //id / Cop
+    uint id() { return opcode() & 0x3; } //This is used mainly for coprocesor opcode id but its also used on opcodes that trigger exception
+};
 \end{lstlisting}
 
 The names for the accessor functions match those I've seen used in the
 various references to name the various fields.
 
 We can now leverage that fancy interface in
-\code{decode\_and\_execute}:
+\code{lookup} (see \ref{code:cputick}):
 
-\begin{lstlisting}
-impl Cpu {
-     // ...
 
-    fn decode_and_execute(&mut self, instruction: Instruction) {
-        match instruction.function() {
-            0b001111 => self.op_lui(instruction),
-            _        => panic!("Unhandled instruction {:x}", instruction.0),
-        }
+\begin{lstlisting}[caption={Executing opcode.}]
+void CPU::tick()
+{
+    ...
+    /* Look up the C++ function (implementing some PS1 functionality) corresponding to opcode Execute it. */
+    auto& handler = lookup[instr.opcode()];
+
+    if (handler != nullptr)
+    {
+        KR_CORE_INFO("Executing legal instruction");
+       /* Let's boogie*/
+        handler();
     }
-
-    /// Load Upper Immediate
-    fn op_lui(&mut self, instruction: Instruction) {
-        let i = instruction.imm();
-        let t = instruction.t();
-
-        panic!("what now?");
+    else
+    {
+        exception(ExceptionType::IllegalInstr);
     }
 }
 \end{lstlisting}
 
 We're very close to finally run our first instruction in full but
 we're still missing something: we see that the register field in this
-instruction is 5bits, that means it can index 32 registers. But for
+instruction is 5bits [20:16], that means it can index 32 registers. But for
 now we only have one register in our CPU: the PC. We need to
 introduce the rest of them.
 

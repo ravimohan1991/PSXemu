@@ -44,7 +44,7 @@ void CPU::tick()
     /* Execute it. */
     auto& handler = lookup[instr.opcode()];
     
-    KR_CORE_INFO("Attempting executing opcode {0:x} from lookup table", instr.opcode());
+    KR_CORE_INFO("Attempting executing opcode 0x{0:x} from lookup table", instr.opcode());
     
     if (handler != nullptr)
     {
