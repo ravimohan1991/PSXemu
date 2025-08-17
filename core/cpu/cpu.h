@@ -199,32 +199,45 @@ public:
     void op_mfc0(); void op_mtc0();                      
 
 public:
-    Bus* bus;
+	Bus* bus;
 
-    /* Registers. */
-    
-    /**
-     * @brief
-     * Program counter register
-     *
-     * @note We are using unsigned 32bit because PS1 uses 32bit addresses
-     */
-    uint pc;
-    
-    /**
-     * @brief
-     * Cache for current value (address) of program counter
-     */
-    uint current_pc;
-    
-    /**
-     * @brief
-     * Cache for address of next instruction of program counter (``pc``).
-     */
-    uint next_pc;
-    uint i_stat, i_mask;
-    uint registers[32] = {};
-    uint hi, lo;
+	/* Registers. */
+
+	/**
+	 * @brief
+	 * Program counter register
+	 *
+	 * @note We are using unsigned 32bit because PS1 uses 32bit addresses
+	 */
+	uint pc;
+	
+	/**
+	 * @brief
+	 * Cache for current value (address) of program counter
+	 */
+	uint current_pc;
+	
+	/**
+	 * @brief
+	 * Cache for address of next instruction of program counter (``pc``).
+	 */
+	uint next_pc;
+	uint i_stat, i_mask;
+	
+	/**
+	 * @brief General purpose 32bit registers
+	 *
+	 * @note The first entry must always contain 0 (to be seen)
+	 */
+	uint registers[32] = {};
+
+	/**
+	 * @brief Special purpose registers
+	 *
+	 * hi: high 32bits of multiplication result; remainder of division
+	 * lo: low 32bits of multiplication result; quotient of division
+	 */
+	uint hi, lo;
 
     /* Flow control. */
     bool is_branch, is_delay_slot;

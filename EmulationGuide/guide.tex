@@ -1139,63 +1139,57 @@ always 0 to avoid special cases. Of course we'll have
 to be careful to always keep its value to 0.
 
 \begin{lstlisting}
-/// CPU state
-pub struct Cpu {
-    /// The program counter register
-    pc: u32,
-    /// General Purpose Registers.
-    /// The first entry must always contain 0.
-    regs: [u32; 32],
-    /// Memory interface
-    inter: Interconnect,
+class CPU
+{
+  public:
+	/**
+	 * @brief
+	 * Program counter register
+	 *
+	 * @note We are using unsigned 32bit because PS1 uses 32bit addresses
+	 */
+	uint pc;
+         
+	/**
+	 * @brief General purpose 32bit registers
+	 * @note The first entry must always contain 0
+	 */
+	uint registers[32] = {};
+
+	/**
+	 * @brief Special purpose registers
+	 *
+	 * hi: high 32bits of multiplication result; remainder of division
+	 * lo: low 32bits of multiplication result; quotient of division
+	 */
+	uint hi, lo;
 }
 \end{lstlisting}
 
 The registers are not initialized on reset, so they contain garbage
 value when we start up. For the sake of our emulator being
 deterministic I won't actually put random values in the registers
-however, instead I'm going to use an arbitrary garbage value
-\code{0xdeadbeef}. We could as well initialize them to 0 but I
-prefer to use a more distinguishable value which can be helpful while
-debugging. We must remember to put 0 in \$zero however.
+however, instead we are going to 0 initialize.  You can use an arbitrary
+garbage value for instance \code{0xdeadbeef}, a more distinguishable
+value which can be helpful while debugging. We must remember to put 0
+in \$zero however.
 
 \begin{lstlisting}
-impl Cpu {
-    pub fn new(inter: Interconnect) -> Cpu {
-        // Not sure what the reset values are...
-        let mut regs = [0xdeadbeef; 32];
-
-        // ... but R0 is hardwired to 0
-        regs[0] = 0;
-
-        Cpu {
-            // PC reset value at the beginning of the BIOS
-            pc: 0xbfc00000,
-            regs: regs,
-            inter: inter,
-        }
-    }
-
-    fn reg(&self, index: u32) -> u32 {
-        self.regs[index as usize]
-    }
-
-    fn set_reg(&mut self, index: u32, val: u32) {
-        self.regs[index as usize] = val;
-
-        // Make sure R0 is always 0
-        self.regs[0] = 0;
-    }
-
-    // ...
+void CPU::reset()
+{
+	pc = 0xbfc00000;
+	...
+	hi = 0; lo = 0;
+	
+	/* Clear general purpose registers. */
+	memset(registers, 0, 32 * sizeof(uint));
+	
+	...
 }
 \end{lstlisting}
 
-I've also added a getter and a setter. They're very straightforward
-but I take care to always write 0 in \$zero in case it gets
-overwritten. I don't ever bother checking if the function wrote in
-this register or an other one, writing a 32bit value is cheap and
-probably cheaper than adding an \code{if}. It's also important to
+The \$zero is reset to 0.  Apparently writing a 32bit value is
+cheap and probably cheaper then adding an \code{if}. It's also important to
 note that the BIOS does try to write to \$zero, it is believed that
 this is useful to discard an I/O result without having to waste a
 register.

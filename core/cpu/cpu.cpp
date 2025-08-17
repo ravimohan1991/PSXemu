@@ -86,25 +86,25 @@ void CPU::force_test()
 
 void CPU::break_on_next_tick()
 {
-    should_break = true;
+	should_break = true;
 }
 
 void CPU::reset()
 {
-    /* Reset registers and PC. */
-    pc = 0xbfc00000;
-    next_pc = pc + 4;
-    current_pc = 0;
-    hi = 0; lo = 0;
-
-    /* Clear general purpose registers. */
-    memset(registers, 0, 32 * sizeof(uint));
-
-    /* Clear CPU state. */
-    is_branch = false;
-    is_delay_slot = false;
-    took_branch = false;
-    in_delay_slot_took_branch = false;
+	/* Reset registers and PC. */
+	pc = 0xbfc00000;
+	next_pc = pc + 4;
+	current_pc = 0;
+	hi = 0; lo = 0;
+	
+	/* Clear general purpose registers. */
+	memset(registers, 0, 32 * sizeof(uint));
+	
+	/* Clear CPU state. */
+	is_branch = false;
+	is_delay_slot = false;
+	took_branch = false;
+	in_delay_slot_took_branch = false;
 }
 
 void CPU::handle_interrupts()
@@ -876,7 +876,7 @@ void CPU::op_sw()
 
 void CPU::op_lui()
 {
-    set_reg(instr.rt(), instr.imm() << 16);
+	set_reg(instr.rt(), instr.imm() << 16);
 }
 
 void CPU::op_ori()
