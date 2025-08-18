@@ -999,6 +999,7 @@ void CPU::tick()
     {
         exception(ExceptionType::IllegalInstr);
     }
+    ...
 }
 \end{lstlisting}
 
@@ -1200,32 +1201,107 @@ Now we can finally implement our first instruction in full! Here's
 what \code{op\_lui} looks like now:
 
 \begin{lstlisting}
-impl Cpu {
-
-    // ...
-
-    /// Load Upper Immediate
-    fn op_lui(&mut self, instruction: Instruction) {
-        let i = instruction.imm();
-        let t = instruction.t();
-
-        // Low 16bits are set to 0
-        let v = i << 16;
-
-        self.set_reg(t, v);
-    }
+void CPU::op_lui()
+{
+	set_reg(instr.rt(), instr.imm() << 16);
 }
 \end{lstlisting}
 
-Note that the low 16bits are set to 0. It's important as we'll see
-with the next instruction.
+where \code{set\_reg} is
+\begin{lstlisting}[caption={Setting the registers to value}, label={code:registerval}]
+struct MEM
+{
+	uint reg = 0;
+	uint value = 0;
+};
 
-The first instruction in the BIOS uses LUI to put 0x13 in the high
-16bits of \$8.
+class CPU
+{
+  ...
+  public:
+  MEM write_back;
+  ...
+}
+
+void CPU::set_reg(uint regN, uint value)
+{
+	write_back.reg = regN;
+	write_back.value = value;
+}
+
+void CPU::tick()
+{
+    ...
+    
+    /* Fetch next instruction. */
+    fetch();
+
+    //if (pc == 0x8002dde4) __debugbreak();
+
+    /* Execute it. */
+    auto& handler = lookup[instr.opcode()];
+        
+    if (handler != nullptr)
+    {
+        KR_CORE_INFO("Executing legal instruction");
+        handler();
+    }
+    else
+    {
+        exception(ExceptionType::IllegalInstr);
+    }
+
+    /* Apply pending load delays. */
+    handle_load_delay();
+
+   ...
+}
+
+void CPU::handle_load_delay()
+{
+	...
+
+	registers[write_back.reg] = write_back.value;
+	write_back.reg = 0;
+	
+	// Ensuring $zero is 0
+	registers[0] = 0;
+} 
+\end{lstlisting}
+
+Note that the low 16bits are set to 0. The first instruction in the BIOS
+uses LUI to put 0x13 in the high 16bits of \$8 which we have achieved in
+the above C++ code.  It's important as we'll see with the next instruction.
 
 \subsection{ORI instruction}
 
-We can directly implement the 2nd instruction: \code{0x3508243f}.
+The logs corresponding to second instruction obtained are like so:
+
+\begin{verbatim}
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc00004
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc00004 using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc00004 -> Physical address: 0x1fc00004
+[12:31:59][info] KARMA: Found abs_addr (1fc00004) in BIOSes range
+[12:31:59][info] KARMA: Offset 4
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 889726015, 0x3508243f
+[12:31:59][info] KARMA: | opcode: 13, 0xd
+[12:31:59][info] KARMA: | rs: 8, 0x8
+[12:31:59][info] KARMA: | rt: 8, 0x8
+[12:31:59][info] KARMA: | imm: 9279, 0x243f
+[12:31:59][info] KARMA: | imms: 9279, 0x243f
+[12:31:59][info] KARMA: | rd: 4, 0x4
+[12:31:59][info] KARMA: | sa: 16, 0x10
+[12:31:59][info] KARMA: | addr: 17310783, 0x108243f
+[12:31:59][info] KARMA: | id: 1, 0x1
+[12:31:59][info] KARMA: +-------------------------------------------------------
+\end{verbatim}
+
+We have to implement the 2nd instruction: \code{0x3508243f}.
 
 It decodes to:
 
@@ -1233,10 +1309,12 @@ It decodes to:
 ori $8, $8, 0x243f
 \end{lstlisting}
 
+Note that \code{opcode} is 0xd, which, accroding to \href{https://problemkaputt.de/psx-spx.htm#cpuopcodeencoding}{specification}, is \code{ori} opcode.
+
 In other words, it puts the result of the \emph{bitwise or} of \$8 and
 0x243f back into \$8. The previous LUI initialized the high
 16bits of \$8 and set the rest to 0 so this one will initialize the
-low 16bits.
+low 16bits\footnote{0x243f in binary is 00000000000000000010010000111111.}.
 
 That's the simplest way to load a constant in a register with the MIPS
 instruction set and that's why it's important for LUI to set the low
@@ -1245,36 +1323,72 @@ instruction set and that's why it's important for LUI to set the low
 The implementation is straightforward:
 
 \begin{lstlisting}
-impl Cpu {
-    // ...
-
-    fn decode_and_execute(&mut self, instruction: Instruction) {
-        match instruction.function() {
-            0b001111 => self.op_lui(instruction),
-            0b001101 => self.op_ori(instruction),
-            _        => panic!("Unhandled instruction {:x}",
-                               instruction.0),
-        }
-    }
-
-    /// Bitwise Or Immediate
-    fn op_ori(&mut self, instruction: Instruction) {
-        let i = instruction.imm();
-        let t = instruction.t();
-        let s = instruction.s();
-
-        let v = self.reg(s) | i;
-
-        self.set_reg(t, v);
-    }
+void CPU::op_ori()
+{
+	set_reg(instr.rt(), registers[instr.rs()] | instr.imm());// Bitwise Or Immediate
 }
 \end{lstlisting}
+where \code{set\_reg} is in \ref{code:registerval}.
 
 After those two instructions the value of \$8 should be
-\code{0x0013243f}. The next instruction as an other LUI which puts
-\code{0x1f800000} in \$1.
+\code{0x0013243f}\footnote{$00000000000100110000000000000000 \mid 00000000000000000010010000111111 = 00000000000100110010010000111111$}. The logs corresponding to next instruction are
+
+\begin{verbatim}
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc00008
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc00008 using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc00008 -> Physical address: 0x1fc00008
+[12:31:59][info] KARMA: Found abs_addr (1fc00008) in BIOSes range
+[12:31:59][info] KARMA: Offset 8
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 1006706560, 0x3c011f80
+[12:31:59][info] KARMA: | opcode: 15, 0xf
+[12:31:59][info] KARMA: | rs: 0, 0x0
+[12:31:59][info] KARMA: | rt: 1, 0x1
+[12:31:59][info] KARMA: | imm: 8064, 0x1f80
+[12:31:59][info] KARMA: | imms: 8064, 0x1f80
+[12:31:59][info] KARMA: | rd: 3, 0x3
+[12:31:59][info] KARMA: | sa: 30, 0x1e
+[12:31:59][info] KARMA: | addr: 73600, 0x11f80
+[12:31:59][info] KARMA: | id: 3, 0x3
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: Attempting executing opcode f from lookup table
+\end{verbatim}
+
+Thus, for next instruction we have another LUI which puts \code{0x1f80} in \$1.
+
+\begin{lstlisting}[language=assembly]
+lui $1, 0x1f80
+\end{lstlisting}
 
 \subsection{Writing to memory}
+Logs corresponding to next instruction obtained are
+\begin{verbatim}
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc0000c
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc0000c using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc0000c -> Physical address: 0x1fc0000c
+[12:31:59][info] KARMA: Found abs_addr (1fc0000c) in BIOSes range
+[12:31:59][info] KARMA: Offset 12
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 2888306704, 0xac281010
+[12:31:59][info] KARMA: | opcode: 43, 0x2b
+[12:31:59][info] KARMA: | rs: 1, 0x1
+[12:31:59][info] KARMA: | rt: 8, 0x8
+[12:31:59][info] KARMA: | imm: 4112, 0x1010
+[12:31:59][info] KARMA: | imms: 4112, 0x1010
+[12:31:59][info] KARMA: | rd: 2, 0x2
+[12:31:59][info] KARMA: | sa: 0, 0x0
+[12:31:59][info] KARMA: | addr: 2625552, 0x281010
+[12:31:59][info] KARMA: | id: 3, 0x3
+[12:31:59][info] KARMA: +-------------------------------------------------------
+\end{verbatim}
 
 The next instruction, \code{0xac281010}, is going to give us a
 little more trouble. It decodes to the ``store word'' instruction:
@@ -1285,8 +1399,8 @@ sw $8, 0x1010($1)
 
 If you're not familiar with GNU assembly syntax the
 \code{0x1010(\$1)} syntax means ``address in \$1 plus offset
-0x1010''. In this case the full instruction is ``store the 32bits in
-register \$8 at the location \$1 + 0x1010''. Given the current values
+0x1010''. In this case the full instruction is ``store the 32bits contained
+in register \$8, at the location \$1 + 0x1010''. Given the current values
 of the \$1 and \$8 registers it would store \code{0x0013243f} at the
 address \code{0x1f801010}.
 
