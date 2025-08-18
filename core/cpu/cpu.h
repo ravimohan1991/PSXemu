@@ -11,8 +11,8 @@
 
 struct MEM
 {
-    uint reg = 0;
-    uint value = 0;
+	uint reg = 0;
+	uint value = 0;
 };
 
 typedef std::function<void()> CPUfunc;
@@ -267,7 +267,7 @@ public:
     Cop0 cop0;
     GTE gte;
 
-    MEM write_back, memory_load;
+	MEM write_back, memory_load;
     MEM delayed_memory_load;
 
     /**

@@ -267,16 +267,18 @@ void CPU::exception(ExceptionType cause, uint cop)
 
 void CPU::handle_load_delay()
 {
-    if (delayed_memory_load.reg != memory_load.reg)
-    {
-        registers[memory_load.reg] = memory_load.value;
-    }
-    memory_load = delayed_memory_load;
-    delayed_memory_load.reg = 0;
+	if (delayed_memory_load.reg != memory_load.reg)
+	{
+		registers[memory_load.reg] = memory_load.value;
+	}
+	memory_load = delayed_memory_load;
+	delayed_memory_load.reg = 0;
 
-    registers[write_back.reg] = write_back.value;
-    write_back.reg = 0;
-    registers[0] = 0;
+	registers[write_back.reg] = write_back.value;
+	write_back.reg = 0;
+	
+	// Ensuring $zero is 0
+	registers[0] = 0;
 }
 
 void CPU::op_bcond()
@@ -881,13 +883,13 @@ void CPU::op_lui()
 
 void CPU::op_ori()
 {
-    set_reg(instr.rt(), registers[instr.rs()] | instr.imm());
+	set_reg(instr.rt(), registers[instr.rs()] | instr.imm());
 }
 
 void CPU::set_reg(uint regN, uint value)
 {
-    write_back.reg = regN;
-    write_back.value = value;
+	write_back.reg = regN;
+	write_back.value = value;
 }
 
 void CPU::load(uint regN, uint value)
