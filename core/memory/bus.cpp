@@ -299,51 +299,68 @@ void Bus::write(uint addr, T value)
 {
 	/* Map the memory ranges. */
 	uint abs_addr = physical_addr(addr);
-	if (TIMERS.contains(abs_addr)) {
+	
+	if (TIMERS.contains(abs_addr))
+	{
 		ubyte timer = (abs_addr >> 4) & 3;
 		return timers[timer]->write(abs_addr, (uint)value);
 	}
-	else if (GPU_RANGE.contains(abs_addr)) {
+	else if (GPU_RANGE.contains(abs_addr))
+	{
 		return gpu->write(abs_addr, (uint)value);
 	}
-	else if (PAD_MEMCARD.contains(abs_addr)) {
+	else if (PAD_MEMCARD.contains(abs_addr))
+	{
 		return controller->write<T>(abs_addr, value);
 	}
-	else if (SCRATCHPAD.contains(abs_addr)) {
+	else if (SCRATCHPAD.contains(abs_addr))
+	{
 		int offset = SCRATCHPAD.offset(abs_addr);
 		return util::write_memory(scratchpad, offset, value);
 	}
-	else if (CDROM.contains(abs_addr)) {
+	else if (CDROM.contains(abs_addr))
+	{
 		if (std::is_same<T, ubyte>::value)
+		{
 			return cddrive->write(abs_addr, (ubyte)value);
+		}
 	}
-	else if (DMA_RANGE.contains(abs_addr)) {
+	else if (DMA_RANGE.contains(abs_addr))
+	{
 		return dma->write(abs_addr, (uint)value);
 	}
-	else if (SPU_RANGE.contains(abs_addr)) {
+	else if (SPU_RANGE.contains(abs_addr))
+	{
 		return spu->write<T>(abs_addr, value);
 	}
-	else if (RAM.contains(abs_addr)) {
+	else if (RAM.contains(abs_addr))
+	{
 		int offset = RAM.offset(abs_addr);
 		return util::write_memory<T>(ram, offset, value);
 	}
-	else if (CACHE_CONTROL.contains(abs_addr)) {
+	else if (CACHE_CONTROL.contains(abs_addr))
+	{
 		int offset = CACHE_CONTROL.offset(abs_addr);
 		return util::write_memory<T>(&cpu->cache_control.value, offset, value);
 	}
-	else if (RAM_SIZE.contains(abs_addr)) {
+	else if (RAM_SIZE.contains(abs_addr))
+	{
 		return;
 	}
-	else if (EXPANSION_2.contains(abs_addr)) {
+	else if (EXPANSION_2.contains(abs_addr))
+	{
 		return exp2->write<T>(abs_addr, value);
 	}
-	else if (SYS_CONTROL.contains(abs_addr)) {
+	else if (SYS_CONTROL.contains(abs_addr))
+	{
 		return;
 	}
-	else if (INTERRUPT.contains(abs_addr)) {
+	else if (INTERRUPT.contains(abs_addr))
+	{
 		return cpu->write_irq(abs_addr, value);
 	}
-	else {
+	else
+	{
 		printf("[MEM] Emulator::write: unhandled write to address: 0x%x with width %d\n", abs_addr, sizeof(T));
 		return;
 	}

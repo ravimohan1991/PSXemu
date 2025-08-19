@@ -1400,68 +1400,115 @@ sw $8, 0x1010($1)
 If you're not familiar with GNU assembly syntax the
 \code{0x1010(\$1)} syntax means ``address in \$1 plus offset
 0x1010''. In this case the full instruction is ``store the 32bits contained
-in register \$8, at the location \$1 + 0x1010''. Given the current values
-of the \$1 and \$8 registers it would store \code{0x0013243f} at the
-address \code{0x1f801010}.
+in register \$8, at the location \$1 + 0x1010''. Now the location offset could be positive
+or \emph{negative}.  So we need to find a way to introduce ``signed'' values.
 
-We can implement the storing to memory by mirroring our
-\code{load32} code:
+Given the current values of the \$1 and \$8 registers, the instruction would store
+\code{0x0013243f} at the address \code{0x00002f90}.
+
+We can implement the storing to memory like so
 
 \begin{lstlisting}
-impl Cpu {
-    // ...
+void CPU::op_sw()
+{
+	if (!cop0.sr.IsC)
+	{
+		uint r = instr.rs();
+		uint i = instr.imm_s();
+		uint addr = registers[r] + i;
 
-    /// Store 32bit value into the memory
-    fn store32(&mut self, addr: u32, val: u32) {
-        self.inter.store32(addr, val);
-    }
-
-    fn decode_and_execute(&mut self, instruction: Instruction) {
-        match instruction.function() {
-            0b001111 => self.op_lui(instruction),
-            0b001101 => self.op_ori(instruction),
-            0b101011 => self.op_sw(instruction),
-            _        => panic!("Unhandled instruction {:x}", instruction.0),
-        }
-    }
-
-    // ...
-
-    /// Store Word
-    fn op_sw(&mut self, instruction: Instruction) {
-        let i = instruction.imm();
-        let t = instruction.t();
-        let s = instruction.s();
-
-        let addr = self.reg(s).wrapping_add(i);
-        let v    = self.reg(t);
-
-        self.store32(addr, v);
-    }
+		if ((addr & 0x3) == 0)
+		{
+			bus->write(addr, registers[instr.rt()]);
+		}
+		else
+		{
+			cop0.BadA = addr;
+			exception(ExceptionType::WriteError, instr.id());
+		}
+	}
 }
 \end{lstlisting}
 
-This code for \code{op\_sw} is actually subtly broken, I'll explain
-why in a moment. For these values of \code{addr} and \code{i}
-it'll do the right thing though. You can see that we call into the
-interconnect's \code{store32} method that we have yet to
-implement. Since the only peripheral we support so far is the BIOS ROM
-and we
-\href{https://github.com/simias/psx-hardware-tests/blob/master/tests/bios_write/main.s}{can't
-  write to it} there's not much we can do at that point, let's just
-log the access and panic:
+This code for \code{op\_sw} is actually using ``signed'' extended \emph{immediate} value,
+defined in \ref{code:signedimm}.
+We'll explain how in a moment (see \ref{subsection:signextension}).  You can see that we
+call into the interconnect's \code{write} method that we have yet to show. So here goes
 
 \begin{lstlisting}
-impl Interconnect {
-    // ...
-
-    /// Store 32bit word `val` into `addr`
-    pub fn store32(&mut self, addr: u32, val: u32) {
-        panic!("unhandled store32 into address {:08x}", addr);
-    }
+template<typename T>
+void Bus::write(uint addr, T value)
+{
+	/* Map the memory ranges. */
+	uint abs_addr = physical_addr(addr);
+	
+	if (TIMERS.contains(abs_addr))
+	{
+		ubyte timer = (abs_addr >> 4) & 3;
+		return timers[timer]->write(abs_addr, (uint)value);
+	}
+	else if (GPU_RANGE.contains(abs_addr))
+	{
+		return gpu->write(abs_addr, (uint)value);
+	}
+	else if (PAD_MEMCARD.contains(abs_addr))
+	{
+		return controller->write<T>(abs_addr, value);
+	}
+	else if (SCRATCHPAD.contains(abs_addr))
+	{
+		int offset = SCRATCHPAD.offset(abs_addr);
+		return util::write_memory(scratchpad, offset, value);
+	}
+	else if (CDROM.contains(abs_addr))
+	{
+		if (std::is_same<T, ubyte>::value)
+		{
+			return cddrive->write(abs_addr, (ubyte)value);
+		}
+	}
+	else if (DMA_RANGE.contains(abs_addr))
+	{
+		return dma->write(abs_addr, (uint)value);
+	}
+	else if (SPU_RANGE.contains(abs_addr))
+	{
+		return spu->write<T>(abs_addr, value);
+	}
+	else if (RAM.contains(abs_addr))
+	{
+		int offset = RAM.offset(abs_addr);
+		return util::write_memory<T>(ram, offset, value);
+	}
+	else if (CACHE_CONTROL.contains(abs_addr))
+	{
+		int offset = CACHE_CONTROL.offset(abs_addr);
+		return util::write_memory<T>(&cpu->cache_control.value, offset, value);
+	}
+	else if (RAM_SIZE.contains(abs_addr))
+	{
+		return;
+	}
+	else if (EXPANSION_2.contains(abs_addr))
+	{
+		return exp2->write<T>(abs_addr, value);
+	}
+	else if (SYS_CONTROL.contains(abs_addr))
+	{
+		return;
+	}
+	else if (INTERRUPT.contains(abs_addr))
+	{
+		return cpu->write_irq(abs_addr, value);
+	}
+	else
+	{
+		printf("[MEM] Emulator::write: unhandled write to address: 0x%x with width %d\n", abs_addr, sizeof(T));
+		return;
+	}
 }
 \end{lstlisting}
-
+\iffalse
 \subsubsection{Unaligned memory access}
 
 While we're at it I just realized that so far we allow 32bit fetch and
@@ -1572,11 +1619,11 @@ It's a bit hackish but at least the store will now go through.
 Before we move on to the next instruction we need to address the
 ``subtle brokenness'' in our SW implementation I was talking about
 earlier.
-
+\fi
 \subsection{Sign extension}
-
-The reason our current ``Store word'' extension is broken is because
-we're not handling the immediate value correctly. It should be
+\label{subsection:signextension}
+The reason we use \code{instr.imm\_s()} in ``Store word'' is to handle the
+immediate value correctly. It should be
 interpreted like a signed 16bit value in a
 \href{https://en.wikipedia.org/wiki/Two%27s_complement}{two's complement}
 representation.
@@ -1656,19 +1703,14 @@ immediate from 16 to 32 bits and then we can proceed with our usual
 "unsigned" addition and we'll get the correct result whether the
 offset is negative or positive:
 
-\begin{lstlisting}
-impl Instruction {
-    // ...
-
-    /// Return immediate value in bits [16:0] as a sign-extended 32bit
-    /// value
-    fn imm_se(self) -> u32 {
-        let Instruction(op) = self;
-
-        let v = (op & 0xffff) as i16;
-
-        v as u32
-    }
+\begin{lstlisting}[caption={Signed immediate}, label={code:signedimm}]
+struct Instr
+{
+	/**
+	 * @brief
+	 * Immediate value sign extended
+	 */
+         uint imm_s() { return(uint)(int16_t)imm(); }
 }
 \end{lstlisting}
 
@@ -1676,39 +1718,12 @@ Note the order of the casts from \code{u32} to \code{i16} back to
 \code{u32}. They might look useless but that's what's forcing the
 compiler to generate instructions to sign-extend \code{v}.
 
-\subsection{SW instruction}
-
-We can now use this function to fix \code{op\_sw}, we just have to
-replace \code{instruction.imm()} with the new sign-extending
-\code{instruction.imm\_se()}:
-
-\begin{lstlisting}
-impl Cpu {
-    // ...
-
-    /// Store Word
-    fn op_sw(&mut self, instruction: Instruction) {
-        let i = instruction.imm_se();
-        let t = instruction.t();
-        let s = instruction.s();
-
-        let addr = self.reg(s).wrapping_add(i);
-        let v    = self.reg(t);
-
-        self.store32(addr, v);
-    }
-}
-\end{lstlisting}
-
-This version of SW should work correctly even if the offset \code{i}
-is negative.
-
 \subsection{SLL instruction}
 
 The next instruction is simply \code{0x00000000}. Looks strange but
 it's perfectly valid. As always we start by reading the bits [31:26]
-which obviously gives us \code{0b000000}. This value however can
-introduce a number of instructions, to figure out which one we need to
+which obviously gives us \code{000000}. This value (primary opcode) however can
+introduce a number of instructions (secondary opcode), to figure out which one we need to
 read bits [5:0] which are again full zeroes. By looking at the
 instruction set reference we see that these value correspond to a
 ``shift left logical'' (SLL). If we decode the entire instruction we

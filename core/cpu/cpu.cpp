@@ -861,19 +861,22 @@ void CPU::op_sll()
 
 void CPU::op_sw()
 {
-    if (!cop0.sr.IsC) {
-        uint r = instr.rs();
-        uint i = instr.imm_s();
-        uint addr = registers[r] + i;
+	if (!cop0.sr.IsC)
+	{
+		uint r = instr.rs();
+		uint i = instr.imm_s();
+		uint addr = registers[r] + i;
 
-        if ((addr & 0x3) == 0) {
-            bus->write(addr, registers[instr.rt()]);
-        }
-        else {
-            cop0.BadA = addr;
-            exception(ExceptionType::WriteError, instr.id());
-        }
-    }
+		if ((addr & 0x3) == 0)
+		{
+			bus->write(addr, registers[instr.rt()]);
+		}
+		else
+		{
+			cop0.BadA = addr;
+			exception(ExceptionType::WriteError, instr.id());
+		}
+	}
 }
 
 void CPU::op_lui()

@@ -60,6 +60,12 @@ public:
 	template <typename T = uint>
 	T read(uint addr);
 
+	/**
+	 * @brief Write data to memory
+	 *
+	 * @param addr						address in memory to write at
+	 * @param data						value to write
+	 */
 	template <typename T = uint>
 	void write(uint addr, T data);
 

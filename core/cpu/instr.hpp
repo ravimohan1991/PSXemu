@@ -45,12 +45,12 @@ struct Instr
      * Returns the immediate value residing in bits [15:0]. For instance 19 or 0x13.
      */
     uint imm() { return value & 0xFFFF; } //Immediate value
-    
-    /**
-     * @brief
-     * Immediate value sign extended
-     */
-    uint imm_s() { return(uint)(int16_t)imm(); }
+
+	/**
+	 * @brief
+	 * Immediate value sign extended
+	 */
+	uint imm_s() { return(uint)(int16_t)imm(); }
 
     //R-Type
     uint rd() { return(value >> 11) & 0x1F; }
