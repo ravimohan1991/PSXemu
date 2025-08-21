@@ -843,20 +843,20 @@ void CPU::op_j()
 
 void CPU::op_addiu()
 {
-    uint rt = instr.rt();
-    uint rs = instr.rs();
-    uint imm = instr.imm_s();
+	uint rt = instr.rt();
+	uint rs = instr.rs();
+	uint imm = instr.imm_s();
 
-    set_reg(instr.rt(), registers[instr.rs()] + instr.imm_s());
+	set_reg(instr.rt(), registers[instr.rs()] + instr.imm_s());
 }
 
 void CPU::op_sll()
 {
-    uint rd = instr.rd();
-    uint rt = instr.rt();
-    uint sa = instr.sa();
+	uint rd = instr.rd();
+	uint rt = instr.rt();
+	uint sa = instr.sa();
 
-    set_reg(instr.rd(), registers[instr.rt()] << (int)instr.sa());
+	set_reg(instr.rd(), registers[instr.rt()] << (int)instr.sa());
 }
 
 void CPU::op_sw()

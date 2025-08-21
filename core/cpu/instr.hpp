@@ -52,10 +52,11 @@ struct Instr
 	 */
 	uint imm_s() { return(uint)(int16_t)imm(); }
 
-    //R-Type
-    uint rd() { return(value >> 11) & 0x1F; }
-    uint sa() { return(value >> 6) & 0x1F; } //Shift Amount
-    uint function() { return value & 0x3F; }  //Function
+	//R-Type
+	uint rd() { return(value >> 11) & 0x1F; }// Return register index in bits [15:11]
+	uint sa() { return(value >> 6) & 0x1F; } //Shift Amount. Shift Immediate values are stored in bits [10 : 6]
+	
+	uint function() { return value & 0x3F; }  //Function. Return bits [5:0] of the instruction
 
     //J-Type                                       
     uint addr() { return value & 0x3FFFFFF; } //Target Address
