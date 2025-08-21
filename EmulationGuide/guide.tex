@@ -1360,7 +1360,7 @@ After those two instructions the value of \$8 should be
 
 Thus, for next instruction we have another LUI which puts \code{0x1f80} in \$1.
 
-\begin{lstlisting}[language=assembly]
+\begin{lstlisting}[language=assembly, label={asm:lui1f80}]
 lui $1, 0x1f80
 \end{lstlisting}
 
@@ -1404,7 +1404,8 @@ in register \$8, at the location \$1 + 0x1010''. Now the location offset could b
 or \emph{negative}.  So we need to find a way to introduce ``signed'' values.
 
 Given the current values of the \$1 and \$8 registers, the instruction would store
-\code{0x0013243f} at the address \code{0x00002f90}.
+\code{0x0013243f} at the address \code{0x1f801010}\footnote{Since \ref{asm:lui1f80} sets the
+upper 16 bits of \$1 the addition is like so $\$1+0x1010=0x1f800000+0x1010=0x1f801010$.}.
 
 We can implement the storing to memory like so
 
@@ -1722,7 +1723,8 @@ compiler to generate instructions to sign-extend \code{v}.
 
 The next instruction is simply \code{0x00000000}. Looks strange but
 it's perfectly valid. As always we start by reading the bits [31:26]
-which obviously gives us \code{000000}. This value (primary opcode) however can
+which obviously gives us \code{0b000000}\footnote{Here \code{b} is for binary
+representation.}. This value (primary opcode) however can
 introduce a number of instructions (secondary opcode), to figure out which one we need to
 read bits [5:0] which are again full zeroes. By looking at the
 instruction set reference we see that these value correspond to a
@@ -1766,33 +1768,19 @@ greater than computing a useless shift and storing it in \$zero.
 
 Let's start by implementing the accessors (the shift immediate is only
 5bits since it wouldn't make sense to shift by more than 31 places and
-the rest of the low bits is taken by the ``subfunction'' part of the
+the rest of the low bits is taken by the ``function'' part of the
 instruction):
 
 \begin{lstlisting}
-impl Instruction {
-    // ...
-
-    /// Return register index in bits [15:11]
-    fn d(self) -> u32 {
-        let Instruction(op) = self;
-
-        (op >> 11) & 0x1f
-    }
-
-    /// Return bits [5:0] of the instruction
-    fn subfunction(self) -> u32 {
-        let Instruction(op) = self;
-
-        op & 0x3f
-    }
-
-    /// Shift Immediate values are stored in bits [10:6]
-    fn shift(self) -> u32 {
-        let Instruction(op) = self;
-
-        (op >> 6) & 0x1f
-    }
+struct Instr
+{
+	...
+  	//R-Type
+	uint rd() { return(value >> 11) & 0x1F; } // Return register index in bits [15:11]
+	uint sa() { return(value >> 6) & 0x1F; } //Shift Amount, Shift Immediate values are stored in bits [10:6]
+	
+	uint function() { return value & 0x3F; }  //Function, Return bits [5:0] of the instruction
+	...
 }
 \end{lstlisting}
 
@@ -1800,34 +1788,13 @@ Now that we have our fancy getters ready to parse the instruction we
 can implement the opcode itself:
 
 \begin{lstlisting}
-impl Cpu {
-    // ...
+void CPU::op_sll()
+{
+	uint rd = instr.rd();
+	uint rt = instr.rt();
+	uint sa = instr.sa();
 
-    fn decode_and_execute(&mut self, instruction: Instruction) {
-        match instruction.function() {
-            0b000000 => match instruction.subfunction() {
-                0b000000 => self.op_sll(instruction),
-                _        => panic!("Unhandled instruction {:08x}",
-                                   instruction.0),
-            },
-            0b001111 => self.op_lui(instruction),
-            0b001101 => self.op_ori(instruction),
-            0b101011 => self.op_sw(instruction),
-            _        => panic!("Unhandled instruction {:08x}",
-                               instruction.0),
-        }
-    }
-
-    /// Shift Left Logical
-    fn op_sll(&mut self, instruction: Instruction) {
-        let i = instruction.shift();
-        let t = instruction.t();
-        let d = instruction.d();
-
-        let v = self.reg(t) << i;
-
-        self.set_reg(d, v);
-    }
+	set_reg(instr.rd(), registers[instr.rt()] << (int)instr.sa());
 }
 \end{lstlisting}
 
@@ -1836,7 +1803,32 @@ should work correctly when we encounter a ``real'' SLL instruction.
 
 \subsection{ADDIU instruction}
 
-After that we encounter the instruction ``0x24080b88'' which is the
+For the next instruction, the logs are
+\begin{verbatim}
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc00014
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc00014 using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc00014 -> Physical address: 0x1fc00014
+[12:31:59][info] KARMA: Found abs_addr (1fc00014) in BIOSes range
+[12:31:59][info] KARMA: Offset 20
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 604507016, 0x24080b88
+[12:31:59][info] KARMA: | opcode: 9, 0x9
+[12:31:59][info] KARMA: | rs: 0, 0x0
+[12:31:59][info] KARMA: | rt: 8, 0x8
+[12:31:59][info] KARMA: | imm: 2952, 0xb88
+[12:31:59][info] KARMA: | imms: 2952, 0xb88
+[12:31:59][info] KARMA: | rd: 1, 0x1
+[12:31:59][info] KARMA: | sa: 14, 0xe
+[12:31:59][info] KARMA: | addr: 527240, 0x80b88
+[12:31:59][info] KARMA: | id: 1, 0x1
+[12:31:59][info] KARMA: +-------------------------------------------------------
+\end{verbatim}
+
+Thus the instruction that we encounter is ``0x24080b88'' which is the
 ``Add Immediate Unsigned'' opcode. The name is completely misleading: it
 seems to say that the immediate value is treated as unsigned (i.e. not
 zero-extended instead of sign-extended) but it's not the case. The
@@ -1845,24 +1837,16 @@ the latter generates an exception on overflow while the former simply
 truncates the result. How they got to ``unsigned'' from that I have no
 idea...
 
-Knowing that it's easy to implement it in our emulator\footnote{I'll
-  skip the code in \code{decode\_and\_execute} from now on, I'm sure
-  you can figure it out by yourself\dots{}}:
+Knowing that it's easy to implement it in our emulator
 
 \begin{lstlisting}
-impl Cpu {
-    // ...
+void CPU::op_addiu()
+{
+	uint rt = instr.rt();
+	uint rs = instr.rs();
+	uint imm = instr.imm_s();
 
-    /// Add Immediate Unsigned
-    fn op_addiu(&mut self, instruction: Instruction) {
-        let i = instruction.imm_se();
-        let t = instruction.t();
-        let s = instruction.s();
-
-        let v = self.reg(s).wrapping_add(i);
-
-        self.set_reg(t, v);
-    }
+	set_reg(instr.rt(), registers[instr.rs()] + instr.imm_s());
 }
 \end{lstlisting}
 
@@ -1878,8 +1862,69 @@ a dedicated ``Load immediate'' opcode.
 
 \subsection{RAM configuration register}
 
+Logs corresponding to the next instruction are
+\begin{verbatim}
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc00018
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc00018 using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc00018 -> Physical address: 0x1fc00018
+[12:31:59][info] KARMA: Found abs_addr (1fc00018) in BIOSes range
+[12:31:59][info] KARMA: Offset 24
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 1006706560, 0x3c011f80
+[12:31:59][info] KARMA: | opcode: 15, 0xf
+[12:31:59][info] KARMA: | rs: 0, 0x0
+[12:31:59][info] KARMA: | rt: 1, 0x1
+[12:31:59][info] KARMA: | imm: 8064, 0x1f80
+[12:31:59][info] KARMA: | imms: 8064, 0x1f80
+[12:31:59][info] KARMA: | rd: 3, 0x3
+[12:31:59][info] KARMA: | sa: 30, 0x1e
+[12:31:59][info] KARMA: | addr: 73600, 0x11f80
+[12:31:59][info] KARMA: | id: 3, 0x3
+[12:31:59][info] KARMA: +-------------------------------------------------------
+\end{verbatim}
+
+The assembly code is
+\begin{lstlisting}[language=assembly, label={asm:lui11f80}]
+lui $1, 0x1f80
+\end{lstlisting}
+The value \code{0x1f80} is stored in upper 16 bits of \$1?
+
+Next instruction logs
+\begin{verbatim}
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc0001c
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc0001c using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc0001c -> Physical address: 0x1fc0001c
+[12:31:59][info] KARMA: Found abs_addr (1fc0001c) in BIOSes range
+[12:31:59][info] KARMA: Offset 28
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 2888306784, 0xac281060
+[12:31:59][info] KARMA: | opcode: 43, 0x2b
+[12:31:59][info] KARMA: | rs: 1, 0x1
+[12:31:59][info] KARMA: | rt: 8, 0x8
+[12:31:59][info] KARMA: | imm: 4192, 0x1060
+[12:31:59][info] KARMA: | imms: 4192, 0x1060
+[12:31:59][info] KARMA: | rd: 2, 0x2
+[12:31:59][info] KARMA: | sa: 1, 0x1
+[12:31:59][info] KARMA: | addr: 2625632, 0x281060
+[12:31:59][info] KARMA: | id: 3, 0x3
+[12:31:59][info] KARMA: +-------------------------------------------------------
+\end{verbatim}
+
+\begin{lstlisting}[language=assembly]
+sw $8 , 0x1060($1)
+\end{lstlisting}
+
+
 This value of \code{0x00000b88} is then stored at address
-\code{0x1f801060}.
+\code{0x1f801060} (recall \$1 contains \code{0x1f80}\footnote{See \ref{asm:lui11f80}.}).
 
 This register is called \code{RAM\_SIZE} in the
 \href{problemkaputt.de/psx-spx.htm#memorycontrol}{NoCash specs}. The
@@ -1906,6 +1951,32 @@ configuration takes a few cycle to take effect and the BIOS delays a
 bit before continuing.
 
 \subsection{J instruction}
+After few cycles of NOPs, the following is logged containing next
+instruction
+
+\begin{verbatim}
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc00070
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc00070 using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc00070 -> Physical address: 0x1fc00070
+[12:31:59][info] KARMA: Found abs_addr (1fc00070) in BIOSes range
+[12:31:59][info] KARMA: Offset 112
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 200278100, 0xbf00054
+[12:31:59][info] KARMA: | opcode: 2, 0x2
+[12:31:59][info] KARMA: | rs: 31, 0x1f
+[12:31:59][info] KARMA: | rt: 16, 0x10
+[12:31:59][info] KARMA: | imm: 84, 0x54
+[12:31:59][info] KARMA: | imms: 84, 0x54
+[12:31:59][info] KARMA: | rd: 0, 0x0
+[12:31:59][info] KARMA: | sa: 1, 0x1
+[12:31:59][info] KARMA: | addr: 66060372, 0x3f00054
+[12:31:59][info] KARMA: | id: 2, 0x2
+[12:31:59][info] KARMA: +-------------------------------------------------------
+\end{verbatim}
 
 The next instruction is \code{0x0bf00054} which is a jump
 instruction (J). This function is used to change the value of the PC
