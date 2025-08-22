@@ -14,37 +14,36 @@
  */
 struct Instr
 {
-    /**
-     * @brief
-     * The actual instruction obtained from reading
-     */
-    uint value;
-    
-    /**
-     * @brief
-     * Returns the bits [31:26] of instruction which is an operation (opcode)
-     * for instance LUI (load upper immediate).
-     */
-    uint opcode() { return value >> 26; }
+	/**
+	 * @brief
+	 * The actual instruction obtained from reading
+	 */
+	uint value;
 
-    //I-Type
-    /**
-     * @brief
-     *
-     */
-    uint rs() { return (value >> 21) & 0x1F; }//Register Source
-    
-    /**
-     * @brief
-     * Returns register target (rt) index in bits [20:16]. For instance register 8.
-     */
-    uint rt() { return(value >> 16) & 0x1F; }
-    
-    /**
-     * @brief
-     * Returns the immediate value residing in bits [15:0]. For instance 19 or 0x13.
-     */
-    uint imm() { return value & 0xFFFF; } //Immediate value
+	/**
+	 * @brief
+	 * Returns the bits [31:26] of instruction which is an operation (opcode)
+	 * for instance LUI (load upper immediate).
+	 */
+	uint opcode() { return value >> 26; }
+
+	//I-Type
+	/**
+	 * @brief Source register in bits [25:21]
+	 */
+	uint rs() { return (value >> 21) & 0x1F; }
+
+	/**
+	 * @brief
+	 * Returns register target (rt) index in bits [20:16]. For instance register 8.
+	 */
+	uint rt() { return(value >> 16) & 0x1F; }
+
+	/**
+	 * @brief
+	 * Returns the immediate value residing in bits [15:0]. For instance 19 or 0x13.
+	 */
+	uint imm() { return value & 0xFFFF; } //Immediate value
 
 	/**
 	 * @brief
@@ -54,13 +53,13 @@ struct Instr
 
 	//R-Type
 	uint rd() { return(value >> 11) & 0x1F; }// Return register index in bits [15:11]
-	uint sa() { return(value >> 6) & 0x1F; } //Shift Amount. Shift Immediate values are stored in bits [10 : 6]
+	uint sa() { return(value >> 6) & 0x1F; } //Shift Amount. Shift Immediate values are stored in bits [10:6]
 	
 	uint function() { return value & 0x3F; }  //Function. Return bits [5:0] of the instruction
 
 	//J-Type
 	uint addr() { return value & 0x3FFFFFF; } //Target Address, masks the lower 26 bits
 
-    //id / Cop
-    uint id() { return opcode() & 0x3; } //This is used mainly for coprocesor opcode id but its also used on opcodes that trigger exception
+	//id / Cop
+	uint id() { return opcode() & 0x3; } //This is used mainly for coprocesor opcode id but its also used on opcodes that trigger exception
 };
