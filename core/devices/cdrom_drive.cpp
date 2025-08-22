@@ -16,13 +16,16 @@ void CDSTATCODE::reset()
 
 void CDSTATCODE::set_state(CDReadState state)
 {
-    reset();
-    spindle_motor_on = true;  // Turn on motor
-    switch (state) {
-    case CDReadState::Seeking: seeking = true; break;
-    case CDReadState::Playing: playing = true; break;
-    case CDReadState::Reading: reading = true; break;
-    }
+	reset();
+	spindle_motor_on = true;  // Turn on motor
+
+	switch (state)
+	{
+		case CDReadState::Seeking: seeking = true; break;
+		case CDReadState::Playing: playing = true; break;
+		case CDReadState::Reading: reading = true; break;
+		case CDReadState::Stopped: break;
+	}
 }
 
 CDManager::CDManager(Bus* _bus)

@@ -661,14 +661,16 @@ void CPU::op_and()
 
 void CPU::op_mfc0()
 {
-    uint mfc = instr.rd();
+	uint mfc = instr.rd();
 
-    if (mfc == 3 || mfc >= 5 && mfc <= 9 || mfc >= 11 && mfc <= 15) {
-        load(instr.rt(), cop0.regs[mfc]);
-    }
-    else {
-        exception(ExceptionType::IllegalInstr, instr.id());
-    }
+	if (mfc == 3 || (mfc >= 5 && mfc <= 9) || (mfc >= 11 && mfc <= 15))
+	{
+		load(instr.rt(), cop0.regs[mfc]);
+	}
+	else
+	{
+		exception(ExceptionType::IllegalInstr, instr.id());
+	}
 }
 
 void CPU::op_lwc2()

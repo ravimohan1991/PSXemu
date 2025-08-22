@@ -308,8 +308,8 @@ struct MemoryEditor
                     {
                         ImGui::SetKeyboardFocusHere();
                         ImGui::CaptureKeyboardFromApp(true);
-                        sprintf(AddrInputBuf, format_data, s.AddrDigitsCount, base_display_addr + addr);
-                        sprintf(DataInputBuf, format_byte, ReadFn ? ReadFn(mem_data, addr) : mem_data[addr]);
+                        snprintf(AddrInputBuf, sizeof(AddrInputBuf), format_data, s.AddrDigitsCount, base_display_addr + addr);
+                        snprintf(DataInputBuf, sizeof(DataInputBuf), format_byte, ReadFn ? ReadFn(mem_data, addr) : mem_data[addr]);
                     }
                     ImGui::PushItemWidth(s.GlyphWidth * 2);
                     struct UserData
@@ -335,7 +335,7 @@ struct MemoryEditor
                     };
                     UserData user_data;
                     user_data.CursorPos = -1;
-                    sprintf(user_data.CurrentBufOverwrite, format_byte, ReadFn ? ReadFn(mem_data, addr) : mem_data[addr]);
+                    snprintf(user_data.CurrentBufOverwrite, sizeof(user_data.CurrentBufOverwrite), format_byte, ReadFn ? ReadFn(mem_data, addr) : mem_data[addr]);
                     ImGuiInputTextFlags flags = ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_NoHorizontalScroll | ImGuiInputTextFlags_AlwaysInsertMode | ImGuiInputTextFlags_CallbackAlways;
                     if (ImGui::InputText("##data", DataInputBuf, 32, flags, UserData::Callback, &user_data))
                         data_write = data_next = true;

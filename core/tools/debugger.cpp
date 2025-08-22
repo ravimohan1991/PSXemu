@@ -35,13 +35,15 @@ DEBugger::DEBugger(Bus* _bus) :
 
 DEBugger::~DEBugger()
 {
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
 
-    for (auto& w : widget_stack) {
-        delete w;
-    }
+	ImGui::DestroyContext();
+
+	for (auto& w : widget_stack)
+	{
+		delete w;
+	}
 }
 
 void DEBugger::init_theme()
