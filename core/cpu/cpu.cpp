@@ -838,9 +838,10 @@ void CPU::op_or()
 
 void CPU::op_j()
 {
-    is_branch = true;
-    took_branch = true;
-    next_pc = (next_pc & 0xF0000000) | (instr.addr() << 2);
+	is_branch = true;
+	took_branch = true;
+	
+	next_pc = (next_pc & 0xF0000000) | (instr.addr() << 2);// & with 0xF0000000 is masking 4 high bits
 }
 
 void CPU::op_addiu()

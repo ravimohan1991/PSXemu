@@ -58,8 +58,8 @@ struct Instr
 	
 	uint function() { return value & 0x3F; }  //Function. Return bits [5:0] of the instruction
 
-    //J-Type                                       
-    uint addr() { return value & 0x3FFFFFF; } //Target Address
+	//J-Type
+	uint addr() { return value & 0x3FFFFFF; } //Target Address, masks the lower 26 bits
 
     //id / Cop
     uint id() { return opcode() & 0x3; } //This is used mainly for coprocesor opcode id but its also used on opcodes that trigger exception

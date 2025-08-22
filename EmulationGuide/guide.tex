@@ -1919,9 +1919,8 @@ Next instruction logs
 \end{verbatim}
 
 \begin{lstlisting}[language=assembly]
-sw $8 , 0x1060($1)
+sw $8, 0x1060($1)
 \end{lstlisting}
-
 
 This value of \code{0x00000b88} is then stored at address
 \code{0x1f801060} (recall \$1 contains \code{0x1f80}\footnote{See \ref{asm:lui11f80}.}).
@@ -1985,8 +1984,8 @@ memory.
 
 Jump behaves like a \emph{goto}: it sets the PC to the immediate value
 contained in the instruction. Since the instruction is 32bit wide and
-the instruction set uses 6bits to encode the opcode it can only
-specify 26bits of the `PC` at once.
+the instruction set uses 6bits ([31:26]) to encode the opcode, it can only
+specify 26bits ([25:0]) of the `PC' at once.
 
 To make the most of those 26bits the target address is shifted two
 places to the right. It's not a problem because instructions must be
@@ -1994,7 +1993,8 @@ aligned to a 32bit boundary so the two LSBs of the PC \emph{always}
 have to be zero. It means that the instruction really encodes 28bits
 of the target address. The remaining 4 high bits are the PC's MSB and
 remain untouched. In the case of our current instruction this makes
-the target address \code{0xbfc00150}.
+the target address \code{0xbfc00150} ((\code{0xbfc00070} \& \code{0xF0000000}) $|$
+(\code{0x3f00054} $<<$ 2)).
 
 You can see that this instruction cannot jump \emph{anywhere} in RAM,
 only to an address within the current 256MB of addressable memory. If
@@ -2006,30 +2006,23 @@ address. But we'll see that soon enough.
 First we need to add an accessor for the 26bit immediate field:
 
 \begin{lstlisting}
-impl Instruction {
-    // ...
-
-    /// Jump target stored in bits [25:0]
-    fn imm_jump(self) -> u32 {
-        let Instruction(op) = self;
-
-        op & 0x3ffffff
-    }
+struct Instr
+{
+  ...
+  uint addr() { return value & 0x3FFFFFF; } //Target Address, masks the lower 26 bits
+  ...
 }
 \end{lstlisting}
 
 Now we can implement the instruction itself:
 
 \begin{lstlisting}
-impl Cpu {
-    // ...
-
-    /// Jump
-    fn op_j(&mut self, instruction: Instruction) {
-        let i = instruction.imm_jump();
-
-        self.pc = (self.pc & 0xf0000000) | (i << 2);
-    }
+void CPU::op_j()
+{
+	is_branch = true;
+	took_branch = true;
+	
+	next_pc = (next_pc & 0xF0000000) | (instr.addr() << 2);// & with 0xF0000000 is masking 4 high bits
 }
 \end{lstlisting}
 
