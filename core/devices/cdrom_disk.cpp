@@ -1,9 +1,6 @@
 #include <stdafx.hpp>
 #include "cdrom_disk.hpp"
 
-constexpr CDPos::CDPos(ubyte minutes, ubyte seconds, ubyte frames) :
-    minutes(minutes), seconds(seconds), frames(frames) {}
-
 CDPos CDPos::from_lba(uint lba)
 {
     ubyte minutes = (ubyte)((uint)lba / 60 / SECTORS_PER_SECOND);

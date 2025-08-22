@@ -1,5 +1,8 @@
 #pragma once
+#include <utility/types.hpp>
 #include <fstream>
+#include <filesystem>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -16,7 +19,8 @@ enum class DataType {
 class CDPos {
 public:
     CDPos() = default;
-    constexpr CDPos(ubyte minutes, ubyte seconds, ubyte frames);
+    constexpr CDPos(ubyte minutes, ubyte seconds, ubyte frames) :
+        minutes(minutes), seconds(seconds), frames(frames) {}
 
     static CDPos from_lba(uint lba);
     uint to_lba() const;

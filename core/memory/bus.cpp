@@ -280,17 +280,15 @@ T Bus::read(uint addr)
 	}
 	else if (RAM_SIZE.contains(abs_addr))
 	{
-		return 0x00000888;
+        return (u_char)0x00000888; // explicit typecasting, wasn't there in previous code
 	}
 	else if (INTERRUPT.contains(abs_addr))
 	{
 		return cpu->read_irq(abs_addr);
 	}
-	else
-	{
-		printf("[MEM] Emulator::read: unhandled read to address: 0x%x with width %lu.\n", abs_addr, sizeof(T));
-		return 0xFFFFFFFF;
-	}
+
+    printf("[MEM] Emulator::read: unhandled read to address: 0x%x with width %lu.\n", abs_addr, sizeof(T));
+    return (u_char)0xFFFFFFFF; // explicit typecasting, wasn't there in previous code
 }
 
 /* Write to memory at address with a specific value. */
@@ -361,7 +359,7 @@ void Bus::write(uint addr, T value)
 	}
 	else
 	{
-		printf("[MEM] Emulator::write: unhandled write to address: 0x%x with width %d\n", abs_addr, sizeof(T));
+        printf("[MEM] Emulator::write: unhandled write to address: 0x%x with width %d\n", abs_addr, (int)sizeof(T));
 		return;
 	}
 }

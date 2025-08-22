@@ -116,7 +116,7 @@ void DMAController::block_copy(DMAChannels dma_channel)
 				data = bus->cddrive->read_word();
 				break;
 			default:
-				printf("Unhandled DMA source channel: 0x%x\n", dma_channel);
+                printf("Unhandled DMA source channel: 0x%x\n", (uint)dma_channel);
 				__debugbreak();
 			}
 
