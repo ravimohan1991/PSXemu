@@ -2104,11 +2104,46 @@ for a dry run of the code.
 
 After the jump there's a sequence of LUI/ORI/SW used to store a bunch
 of values in the \code{SYS\_CONTROL} registers that we chose to
-ignore. We then stumbble upon a new instruction: \code{0x00000825}
-which encodes a \emph{bitwise or} operation:
+ignore.
+
+\begin{verbatim}
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc001b0
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc001b0 using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc001b0 -> Physical address: 0x1fc001b0
+[12:31:59][info] KARMA: Found abs_addr (1fc001b0) in BIOSes range
+[12:31:59][info] KARMA: Offset 432
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 2085, 0x825
+[12:31:59][info] KARMA: | opcode: 0, 0x0
+[12:31:59][info] KARMA: | rs: 0, 0x0
+[12:31:59][info] KARMA: | rt: 0, 0x0
+[12:31:59][info] KARMA: | imm: 2085, 0x825
+[12:31:59][info] KARMA: | imms: 2085, 0x825
+[12:31:59][info] KARMA: | rd: 1, 0x1
+[12:31:59][info] KARMA: | sa: 0, 0x0
+[12:31:59][info] KARMA: | addr: 2085, 0x825
+[12:31:59][info] KARMA: | id: 0, 0x0
+[12:31:59][info] KARMA: +-------------------------------------------------------
+\end{verbatim}
+
+
+We then stumble upon a new instruction: \code{0x00000825}
+which encodes a \emph{bitwise or}\footnote{Primary op code
+  field [31:26] is 0, and secondary op code filed [0:5] is
+0x25 which is bitwise OR.} operation:
 
 \begin{lstlisting}[language=assembly]
 or $1, $zero, $zero
+\end{lstlisting}
+
+Here the registers are like so
+
+\begin{lstlisting}[language=assembly]
+or $rd, $rs, $rt
 \end{lstlisting}
 
 Unlike ORI which used an immediate value as a 2nd operand this one
@@ -2117,19 +2152,9 @@ that in this case the two source registers are \$zero so it just
 clears \$1. The implementation is fairly straightforward:
 
 \begin{lstlisting}
-impl Cpu {
-    // ...
-
-    /// Bitwise Or
-    fn op_or(&mut self, instruction: Instruction) {
-        let d = instruction.d();
-        let s = instruction.s();
-        let t = instruction.t();
-
-        let v = self.reg(s) | self.reg(t);
-
-        self.set_reg(d, v);
-    }
+void CPU::op_or()
+{
+	set_reg(instr.rd(), registers[instr.rs()] | registers[instr.rt()]);
 }
 \end{lstlisting}
 
@@ -2137,6 +2162,8 @@ The next few instructions use OR to set \emph{all} the general purpose
 registers to 0.
 
 \subsection{Type safety in the register interface}
+Note: this contains the code for Rust.  C++ implementation is not done yet.
+
 
 I've decided to make a modification to our Instruction interface:
 right now the helper methods in the \code{Instruction} return
@@ -2194,15 +2221,124 @@ Hurray for type safety!
 
 
 \subsection{CACHE\_CONTROL register}
+\begin{verbatim}
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc0022c
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc0022c using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc0022c -> Physical address: 0x1fc0022c
+[12:31:59][info] KARMA: Found abs_addr (1fc0022c) in BIOSes range
+[12:31:59][info] KARMA: Offset 556
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 604571652, 0x24090804
+[12:31:59][info] KARMA: | opcode: 9, 0x9
+[12:31:59][info] KARMA: | rs: 0, 0x0
+[12:31:59][info] KARMA: | rt: 9, 0x9
+[12:31:59][info] KARMA: | imm: 2052, 0x804
+[12:31:59][info] KARMA: | imms: 2052, 0x804
+[12:31:59][info] KARMA: | rd: 1, 0x1
+[12:31:59][info] KARMA: | sa: 0, 0x0
+[12:31:59][info] KARMA: | addr: 591876, 0x90804
+[12:31:59][info] KARMA: | id: 1, 0x1
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: Attempting executing opcode 9 from lookup table
+[12:31:59][info] KARMA: Executing legal instruction
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc00230
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc00230 using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc00230 -> Physical address: 0x1fc00230
+[12:31:59][info] KARMA: Found abs_addr (1fc00230) in BIOSes range
+[12:31:59][info] KARMA: Offset 560
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 1006764030, 0x3c01fffe
+[12:31:59][info] KARMA: | opcode: 15, 0xf
+[12:31:59][info] KARMA: | rs: 0, 0x0
+[12:31:59][info] KARMA: | rt: 1, 0x1
+[12:31:59][info] KARMA: | imm: 65534, 0xfffe
+[12:31:59][info] KARMA: | imms: 4294967294, 0xfffffffe
+[12:31:59][info] KARMA: | rd: 31, 0x1f
+[12:31:59][info] KARMA: | sa: 31, 0x1f
+[12:31:59][info] KARMA: | addr: 131070, 0x1fffe
+[12:31:59][info] KARMA: | id: 3, 0x3
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: Attempting executing opcode f from lookup table
+[12:31:59][info] KARMA: Executing legal instruction
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc00234
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc00234 using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc00234 -> Physical address: 0x1fc00234
+[12:31:59][info] KARMA: Found abs_addr (1fc00234) in BIOSes range
+[12:31:59][info] KARMA: Offset 564
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 2888368432, 0xac290130
+[12:31:59][info] KARMA: | opcode: 43, 0x2b
+[12:31:59][info] KARMA: | rs: 1, 0x1
+[12:31:59][info] KARMA: | rt: 9, 0x9
+[12:31:59][info] KARMA: | imm: 304, 0x130
+[12:31:59][info] KARMA: | imms: 304, 0x130
+[12:31:59][info] KARMA: | rd: 0, 0x0
+[12:31:59][info] KARMA: | sa: 4, 0x4
+[12:31:59][info] KARMA: | addr: 2687280, 0x290130
+[12:31:59][info] KARMA: | id: 3, 0x3
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: Attempting executing opcode 2b from lookup table
+[12:31:59][info] KARMA: Executing legal instruction
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc00238
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc00238 using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc00238 -> Physical address: 0x1fc00238
+[12:31:59][info] KARMA: Found abs_addr (1fc00238) in BIOSes range
+[12:31:59][info] KARMA: Offset 568
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 1007419393, 0x3c0c0001
+[12:31:59][info] KARMA: | opcode: 15, 0xf
+[12:31:59][info] KARMA: | rs: 0, 0x0
+[12:31:59][info] KARMA: | rt: 12, 0xc
+[12:31:59][info] KARMA: | imm: 1, 0x1
+[12:31:59][info] KARMA: | imms: 1, 0x1
+[12:31:59][info] KARMA: | rd: 0, 0x0
+[12:31:59][info] KARMA: | sa: 0, 0x0
+[12:31:59][info] KARMA: | addr: 786433, 0xc0001
+[12:31:59][info] KARMA: | id: 3, 0x3
+[12:31:59][info] KARMA: +-------------------------------------------------------
+\end{verbatim}
 
+In the above 4 cpu cycles, we have the following assembly
+
+\begin{lstlisting}[language=assembly]
+addiu $rt, $rs, imm 
+lui $rt, imm
+
+sw $rt, imm($rs)
+\end{lstlisting}
+
+\begin{lstlisting}[language=assembly]
+addiu $9, $0, 0x804
+lui $1, 0xfffe
+
+sw $9, 0x0130($1)
+\end{lstlisting}
 The BIOS then wants to write \code{0x00000804} to
-\code{0xfffe0130}. This address is used for cache control. Since we
+\code{0xfffe0130}.
+
+This address is used for cache control. Since we
 won't implement the caches yet we can just add a log message and
 ignore this register for the moment:
 
 \begin{lstlisting}
 /// Cache control register
-pub const CACHE_CONTROL: Range = Range(0xfffe0130, 4);
+const Range CACHE_CONTROL = Range(0xfffe0130, 4);
 \end{lstlisting}
 
 \subsection{The coprocessors}

@@ -153,6 +153,7 @@ void CPU::fetch()
 	KR_CORE_INFO("| sa: {0}, 0x{0:x}", instr.sa());
 	KR_CORE_INFO("| addr: {0}, 0x{0:x}", instr.addr());
 	KR_CORE_INFO("| id: {0}, 0x{0:x}", instr.id());
+	KR_CORE_INFO("| function: {0}, 0x{0:x}", instr.function());
 	KR_CORE_INFO("+-------------------------------------------------------");
 
 	/* Update PC. */
@@ -226,26 +227,28 @@ void CPU::op_ctc2()
 
 void CPU::exception(ExceptionType cause, uint cop)
 {
-    KR_CORE_INFO("Processing illegal expression {0:x}", (uint)cause);
-    
-    uint mode = cop0.sr.raw & 0x3F;
-    cop0.sr.raw &= ~(uint)0x3F;
-    cop0.sr.raw |= (mode << 2) & 0x3F;
+	KR_CORE_INFO("Processing illegal expression {0:x}", (uint)cause);
 
-    uint copy = cop0.cause.raw & 0xff00;
-    cop0.cause.exc_code = (uint)cause;
-    cop0.cause.CE = cop;
+	uint mode = cop0.sr.raw & 0x3F;
+	cop0.sr.raw &= ~(uint)0x3F;
+	cop0.sr.raw |= (mode << 2) & 0x3F;
 
-    if (cause == ExceptionType::Interrupt) {
-        cop0.epc = pc;
+	uint copy = cop0.cause.raw & 0xff00;
+	cop0.cause.exc_code = (uint)cause;
+	cop0.cause.CE = cop;
 
-        /* Hack: related to the delay of the ex interrupt*/
-        is_delay_slot = is_branch;
-        in_delay_slot_took_branch = took_branch;
-    }
-    else {
-        cop0.epc = current_pc;
-    }
+	if (cause == ExceptionType::Interrupt)
+	{
+		cop0.epc = pc;
+
+		/* Hack: related to the delay of the ex interrupt*/
+		is_delay_slot = is_branch;
+		in_delay_slot_took_branch = took_branch;
+	}
+	else
+	{
+		cop0.epc = current_pc;
+	}
 
 	if (is_delay_slot)
 	{
@@ -833,7 +836,7 @@ void CPU::op_mtc0()
 
 void CPU::op_or()
 {
-    set_reg(instr.rd(), registers[instr.rs()] | registers[instr.rt()]);
+	set_reg(instr.rd(), registers[instr.rs()] | registers[instr.rt()]);
 }
 
 void CPU::op_j()
