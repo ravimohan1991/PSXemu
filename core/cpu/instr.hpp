@@ -10,7 +10,7 @@
  * +---------------
  * meaning load 0x13 (or 19 in decimal) in 16 high bits of register 8.
  *
- * @note 0x3c080013 is the first instruction encountered on PS reset, from BIOS.
+ * @note 0x3c080013 is the first instruction encountered on PS reset, from BIOS SCPH1000.
  */
 struct Instr
 {
@@ -55,7 +55,7 @@ struct Instr
 	uint rd() { return(value >> 11) & 0x1F; }// Return register index in bits [15:11]
 	uint sa() { return(value >> 6) & 0x1F; } //Shift Amount. Shift Immediate values are stored in bits [10:6]
 	
-	uint function() { return value & 0x3F; }  //Function. Return bits [5:0] of the instruction
+	uint function() { return value & 0x3F; } //Function. Return bits [5:0] of the instruction
 
 	//J-Type
 	uint addr() { return value & 0x3FFFFFF; } //Target Address, masks the lower 26 bits

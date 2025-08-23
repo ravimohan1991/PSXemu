@@ -359,7 +359,7 @@ void Bus::write(uint addr, T value)
 	}
 	else
 	{
-        printf("[MEM] Emulator::write: unhandled write to address: 0x%x with width %d\n", abs_addr, (int)sizeof(T));
+		printf("[MEM] Emulator::write: unhandled write to address: 0x%x with width %d\n", abs_addr, (int)sizeof(T));
 		return;
 	}
 }

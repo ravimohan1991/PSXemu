@@ -23,43 +23,42 @@ CPU::~CPU()
 
 void CPU::tick()
 {
-    if (should_log)
-    {
-        if (!log_file.is_open())
-        {
-            log_file.open("log.txt");
-        }
+	if (should_log)
+	{
+		if (!log_file.is_open())
+		{
+			log_file.open("log.txt");
+		}
+		log_file << "PC: 0x" << std::hex << pc << '\n';
+	}
 
-        log_file << "PC: 0x" << std::hex << pc << '\n';
-    }
-    
-    KR_CORE_INFO("Inside CPU::tick");
-    KR_CORE_INFO("PC: 0x{0:x}", pc);
-    
-    /* Fetch next instruction. */
-    fetch();
+	KR_CORE_INFO("Inside CPU::tick");
+	KR_CORE_INFO("PC: 0x{0:x}", pc);
 
-    //if (pc == 0x8002dde4) __debugbreak();
+	/* Fetch next instruction. */
+	fetch();
 
-    /* Execute it. */
-    auto& handler = lookup[instr.opcode()];
-    
-    KR_CORE_INFO("Attempting executing opcode 0x{0:x} from lookup table", instr.opcode());
-    
-    if (handler != nullptr)
-    {
-        KR_CORE_INFO("Executing legal instruction");
-        handler();
-    }
-    else
-    {
-        exception(ExceptionType::IllegalInstr);
-    }
+	//if (pc == 0x8002dde4) __debugbreak();
 
-    /* Apply pending load delays. */
-    handle_load_delay();
+	/* Execute it. */
+	auto& handler = lookup[instr.opcode()];
 
-    //force_test();
+	KR_CORE_INFO("Attempting executing opcode 0x{0:x} from lookup table", instr.opcode());
+	
+	if (handler != nullptr)
+	{
+		KR_CORE_INFO("Executing legal instruction");
+		handler();
+	}
+	else
+	{
+		exception(ExceptionType::IllegalInstr);
+	}
+
+	/* Apply pending load delays. */
+	handle_load_delay();
+
+	//force_test();
 }
 
 void CPU::force_test()
@@ -138,43 +137,42 @@ void CPU::handle_interrupts()
 
 void CPU::fetch()
 {
-    KR_CORE_INFO("Fetching next instruction");
-    
-    instr.value = read(pc);
-    
-    KR_CORE_INFO("+-------------------------------------------------------");
-    KR_CORE_INFO("| Fetched instruction ");
-    KR_CORE_INFO("| value: {0}, 0x{0:x}", instr.value);
-    KR_CORE_INFO("| opcode: {0}, 0x{0:x}", instr.opcode());
-    KR_CORE_INFO("| rs: {0}, 0x{0:x}", instr.rs());
-    KR_CORE_INFO("| rt: {0}, 0x{0:x}", instr.rt());
-    KR_CORE_INFO("| imm: {0}, 0x{0:x}", instr.imm());
-    KR_CORE_INFO("| imms: {0}, 0x{0:x}", instr.imm_s());
-    KR_CORE_INFO("| rd: {0}, 0x{0:x}", instr.rd());
-    KR_CORE_INFO("| sa: {0}, 0x{0:x}", instr.sa());
-    KR_CORE_INFO("| addr: {0}, 0x{0:x}", instr.addr());
-    KR_CORE_INFO("| id: {0}, 0x{0:x}", instr.id());
-    KR_CORE_INFO("+-------------------------------------------------------");
+	KR_CORE_INFO("Fetching next instruction");
 
-    /* Update PC. */
-    current_pc = pc;
-    pc = next_pc;
-    next_pc += 4;
+	instr.value = read(pc);
 
-    /* Update (load) delay slots. */
-    is_delay_slot = is_branch;
-    in_delay_slot_took_branch = took_branch;
-    is_branch = false;
-    took_branch = false;
+	KR_CORE_INFO("+-------------------------------------------------------");
+	KR_CORE_INFO("| Fetched instruction ");
+	KR_CORE_INFO("| value: {0}, 0x{0:x}", instr.value);
+	KR_CORE_INFO("| opcode: {0}, 0x{0:x}", instr.opcode());
+	KR_CORE_INFO("| rs: {0}, 0x{0:x}", instr.rs());
+	KR_CORE_INFO("| rt: {0}, 0x{0:x}", instr.rt());
+	KR_CORE_INFO("| imm: {0}, 0x{0:x}", instr.imm());
+	KR_CORE_INFO("| imms: {0}, 0x{0:x}", instr.imm_s());
+	KR_CORE_INFO("| rd: {0}, 0x{0:x}", instr.rd());
+	KR_CORE_INFO("| sa: {0}, 0x{0:x}", instr.sa());
+	KR_CORE_INFO("| addr: {0}, 0x{0:x}", instr.addr());
+	KR_CORE_INFO("| id: {0}, 0x{0:x}", instr.id());
+	KR_CORE_INFO("+-------------------------------------------------------");
 
-    /* Check aligment errors. */
-    if ((current_pc % 4) != 0)
-    {
-        cop0.BadA = current_pc;
+	/* Update PC. */
+	current_pc = pc;
+	pc = next_pc;
+	next_pc += 4;
 
-        exception(ExceptionType::ReadError);
-        return;
-    }
+	/* Update (load) delay slots. */
+	is_delay_slot = is_branch;
+	in_delay_slot_took_branch = took_branch;
+	is_branch = false;
+	took_branch = false;
+
+	/* Check aligment errors. */
+	if ((current_pc % 4) != 0)
+	{
+		cop0.BadA = current_pc;
+		exception(ExceptionType::ReadError);
+		return;
+	}
 }
 
 uint CPU::read_irq(uint address)
@@ -249,20 +247,22 @@ void CPU::exception(ExceptionType cause, uint cop)
         cop0.epc = current_pc;
     }
 
-    if (is_delay_slot) {
-        cop0.epc -= 4;
+	if (is_delay_slot)
+	{
+		cop0.epc -= 4;
 
-        cop0.cause.BD = true;
-        cop0.TAR = pc;
+		cop0.cause.BD = true;
+		cop0.TAR = pc;
 
-        if (in_delay_slot_took_branch) {
-            cop0.cause.BT = true;
-        }
-    }
+		if (in_delay_slot_took_branch)
+		{
+			cop0.cause.BT = true;
+		}
+	}
 
-    /* Select exception address. */
-    pc = exception_addr[cop0.sr.BEV];
-    next_pc = pc + 4;
+	/* Select exception address. */
+	pc = exception_addr[cop0.sr.BEV];
+	next_pc = pc + 4;
 }
 
 void CPU::handle_load_delay()
