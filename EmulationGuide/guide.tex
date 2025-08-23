@@ -5,6 +5,7 @@
 \usepackage{color}
 \usepackage{microtype}
 \usepackage{graphicx}
+\usepackage[normalem]{ulem}
 
 \lstdefinelanguage{Rust}%
   {
@@ -80,8 +81,9 @@
   frame=single
   keepspaces=true,
   keywordstyle=\color{blue},
-  language=Rust,
-  numbers=none,
+  language=C++,
+  numbers=left,
+  stepnumber=5,
   stringstyle=\color{string},
   tabsize=4,
 }
@@ -1994,7 +1996,10 @@ have to be zero. It means that the instruction really encodes 28bits
 of the target address. The remaining 4 high bits are the PC's MSB and
 remain untouched. In the case of our current instruction this makes
 the target address \code{0xbfc00150} ((\code{0xbfc00070} \& \code{0xF0000000}) $|$
-(\code{0x3f00054} $<<$ 2)).
+(\code{0x3f00054} $<<$ 2)).  Thus the assembly code is
+\begin{lstlisting}[language=assembly]
+j   0xbfc00150
+\end{lstlisting}
 
 You can see that this instruction cannot jump \emph{anywhere} in RAM,
 only to an address within the current 256MB of addressable memory. If
@@ -2026,14 +2031,10 @@ void CPU::op_j()
 }
 \end{lstlisting}
 
-Looks simple enough but unfortunately it's broken. Why you ask?
+Looks simple enough but there is a bit of subtle complexity though!
 
 \subsection{Branch delay slots}
 \label{sec:bds}
-
-The reason our implementation of ``jump'' doesn't work properly is
-because one of the simplifying assumptions we made when we started
-implementing the CPU does not hold in this case.
 
 Remember when I said that the CPU fetches and execute an instruction
 at each cycle, increments the PC and repeats? Well it's a bit more
@@ -2095,56 +2096,9 @@ The LUI instruction gets executed \emph{before} the code jumps to
 \code{foo}. When the function is entered \$a0 will be equal to
 \code{0x0f000000}.
 
-Fortunately it's pretty easy to emulate this behaviour: we just have
-to do the same thing the processor does and load the next instruction
-before we execute the current one:
-
-\begin{lstlisting}
-/// CPU state
-pub struct Cpu {
-    /// The program counter register
-    pc: u32,
-    /// Next instruction to be executed, used to simulate the branch
-    /// delay slot
-    next_instruction: Instruction,
-
-    // ...
-}
-
-impl Cpu {
-
-    pub fn new(inter: Interconnect) -> Cpu {
-        // ...
-
-        Cpu {
-            // PC reset value at the beginning of the BIOS
-            pc: 0xbfc00000,
-	    // ...
-            next_instruction: Instruction(0x0), // NOP
-        }
-    }
-
-    pub fn run_next_instruction(&mut self) {
-        let pc = self.pc;
-
-        // Use previously loaded instruction
-        let instruction = self.next_instruction;
-
-        // Fetch instruction at PC
-        self.next_instruction = Instruction(self.load32(pc));
-
-        // Increment PC to point to the next instruction. All
-        // instructions are 32bit long.
-        self.pc = pc + 4;
-
-        self.decode_and_execute(instruction);
-    }
-
-    // ...
-}
-\end{lstlisting}
-
-And now our jumps should behave correctly.
+Fortunately it's pretty easy to emulate this behaviour and we have
+already done that in C++ code.  Refer to appendix \ref{appendix:delayshotdryrun}
+for a dry run of the code.
 
 \subsection{OR instruction}
 
@@ -11509,6 +11463,98 @@ indexes 1, 2 and 3 respectively) but \emph{not} \code{0x80005380} (the
 word at index 0). I suppose that if some of the following instructions
 are already valid they're not fetched again but I haven't tested it
 and it's probably not very common anyway.
+
+\appendix
+\section{Delay Slot Dry Run}
+\label{appendix:delayshotdryrun}
+So consider the situation when the first instruction obtained, having
+jump opcode, is \code{0x0bf00054}, and second instruction is \code{0x3c011f80}.
+The corresponding assembly instructions are
+\begin{lstlisting}[language=assembly]
+j   0xbfc00150
+lui $1, 0x1f80
+\end{lstlisting}
+which are the the first two instructions to be executed.  The relevant C++
+code is
+\begin{lstlisting}
+  using uint = std::uint32_t
+
+  class CPU
+  {
+    public:
+        uint pc, current_pc, next_pc;
+        Instr instr;
+  }
+      
+  void CPU::tick()
+  {
+    ...
+    instr.value = read(pc);
+    current_pc = pc;
+    pc = next_pc;
+    next_pc += 4;
+
+    auto& handler = lookup[instr.opcode()];
+
+    handler();
+  }
+\end{lstlisting}
+and \code{CPU::reset} code is
+\begin{lstlisting}
+void CPU::reset()
+{
+	/* Reset registers and PC. */
+	pc = 0xbfc00000;
+	next_pc = pc + 4;
+	current_pc = 0;
+	hi = 0; lo = 0;
+	
+	/* Clear general purpose registers. */
+	memset(registers, 0, 32 * sizeof(uint));
+	
+	...
+}
+\end{lstlisting}
+
+In the first iteration of \code{CPU::tick}, we have
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{ |c|c|c| }
+  \hline
+  Variable     & Value (begin)     & Value (end) \\ \hline
+  pc           & \code{0xbfc00000} & \code{0xbfc00004} \\ \hline
+  current\_pc  & \code{0x00000000} & \code{0xbfc00000} \\ \hline
+  next\_pc     & \code{0xbfc00004} & \sout{\code{0xbfc00008}} \\
+               &                   & \code{0xbfc00150} \\
+               &                   & jump address \\ \hline
+  instr        & \code{0xbf00054}  & \code{0xbf00054}  \\ \hline
+\end{tabular}
+\caption{Iteration 1}
+\end{table}
+
+where ``begin'' and ``end'' are the stages in the begining and end of the
+tick.  We can see that pc is incremented by 4 units and has not jumped
+to the jump address which is \code{0xbfc00150}, yet.
+
+In the next iteration, we have
+\begin{table}[h!]
+\centering
+\begin{tabular}{ |c|c|c| }
+  \hline
+  Variable     & Value (begin)     & Value (end) \\ \hline
+  pc           & \code{0xbfc00004} & \code{0xbfc00150} \\ \hline
+  current\_pc  & \code{0xbfc00000} & \code{0xbfc00004} \\ \hline
+  next\_pc     & \code{0xbfc00150} & \code{0xbfc00154} \\ \hline
+  instr        & \code{0x3c011f80} & \code{0x3c011f80}  \\ \hline
+\end{tabular}
+\caption{Iteration 2}
+\end{table}
+
+Here, we first read instruction at pc $=$ \code{0xbfc00004} which should
+give instr $=$ \code{0x3c011f80}.  And this is the instruction in `` branched
+delayed slot'' which is executed first before pc reads the instruction at
+jump address.
 
 \newpage
 
