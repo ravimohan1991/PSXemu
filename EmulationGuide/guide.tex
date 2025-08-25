@@ -1411,7 +1411,7 @@ upper 16 bits of \$1 the addition is like so $\$1+0x1010=0x1f800000+0x1010=0x1f8
 
 We can implement the storing to memory like so
 
-\begin{lstlisting}
+\begin{lstlisting}[caption={Store Word C++ implementation}, label={code:opsw}]
 void CPU::op_sw()
 {
 	if (!cop0.sr.IsC)
@@ -2448,88 +2448,104 @@ The coprocessor register \$cop0\_12 is very useful: it's called the
 ``status register'' or SR for short. Among other things it's used to
 query and mask the exceptions and controlling the cache behaviour.
 
-At this point the \$12 register contains \code{0x00010000} so this
-MTC0 instruction sets bit 16 of SR which is the ``isolate cache''
-bit. It makes all the following read and write target directly the
-cache instead of going through it towards the main memory. We're
-probably in the middle of the cache initialization sequence.
+At this point the \$12 register contains \code{0x00010000}\footnote{To
+  see this, look at just previos instruction log which is loading upper bits
+  of \$12 with \code{0x0001}.  In assembly terms, we have
+  \mbox{\code{lui \$12, 0x1}}.} so this
+MTC0 instruction sets bit 16 of SR which is the ``isolate cache'' (IsC)
+bit.  IsC controls whether all load and store operations are targeted to
+the CPU cache and do not directly access main memory.  We further note
+\begin{enumerate}
+\item The CPU's cache (instruction cache) is ``isolated" from the main
+  memory bus, meaning writes go only to the cache and are not immediately
+  reflected in main memory.
+\item This isolation allows the software, such as the PS1 kernel or BIOS,
+  to manipulate the instruction cache directly for performance and
+  synchronization reasons.
+\item To modify code in RAM (for example, self-modifying code), the PS1
+  will isolate the cache and perform writes that only affect the cache
+  without main memory visibility, requiring explicit cache flushes or
+  invalidations later.
+\item The PS1 CPU has a 4KB instruction cache\footnote{An instruction cache
+    in a CPU is designed to speed up the processing of instructions by
+    storing frequently used instructions close to the CPU for quick access.
+    It is much faster to access than other types of memory like main RAM.}
+  but notably lacks a data
+  cache, so this isolation primarily involves instruction cache operations.
+\item Emulators need to emulate this bit and behavior to correctly reproduce
+  how games and BIOS interact with the cache; ignoring it may cause issues
+  with games relying on cache isolation mechanics.
+\item The IsC is isolating the CPU instruction cache from main memory by
+  routing loads and stores only within the cache during certain operations,
+  a feature used by the PS1 OS for controlling cache consistency and performance
+\end{enumerate}
+
+So IsC channels all the following read and write instructions towards itself.
+Thus they are prevented from accessingentering main memory, which is an optimization?
+We are probably in the middle of cache initialization sequence.
 
 At any rate since we still haven't implemented anything cache-related
 we'll just store the value of the SR in our \code{Cpu} struct and
 move along:
 
 \begin{lstlisting}
-/// CPU state
-pub struct Cpu {
-    //...
+void CPU::op_mtc0()
+{
+	uint value = registers[instr.rt()];
+	uint reg = instr.rd();
 
-    /// Cop0 register 12: Status Register
-    sr: u32,
-}
+	bool prev_IEC = cop0.sr.IEc;// sr = status register, IEc = Interrupt enable
 
-impl Cpu {
-    //...
+	if (reg == 13)
+	{
+		cop0.cause.raw &= ~(uint)0x300;
+		cop0.cause.raw |= value & 0x300;
+	}
+	else
+	{
+		cop0.regs[reg] = value;
+	}
 
-    pub fn new(inter: Interconnect) -> Cpu {
-        //...
+	uint irq_mask = cop0.sr.Sw | (cop0.sr.Intr >> 2);// Intr = Hardware Interrupt Mask, Sw = software interrupt mask
+	uint irq_pending = cop0.cause.Sw | (cop0.cause.IP >> 2);
 
-        Cpu {
-	    //...
-	    sr: 0,
-        }
-    }
-
-    fn op_mtc0(&mut self, instruction: Instruction) {
-        let cpu_r = instruction.t();
-        let cop_r = instruction.d().0;
-
-        let v = self.reg(cpu_r);
-
-        match cop_r {
-            12 => self.sr = v,
-            n  => panic!("Unhandled cop0 register: {:08x}", n),
-        }
-    }
+	if (!prev_IEC && cop0.sr.IEc && (irq_mask & irq_pending) > 0)
+	{
+		pc = next_pc;
+		exception(ExceptionType::Interrupt, instr.id());
+	}
 }
 \end{lstlisting}
 
-Setting the SR to 0 on reset might not be accurate but I doubt it
-matters much.
+In line 15, we are essentially setting \$cop0\_12 (sr) register to value
+\code{0x00010000}, i.e IsC bit is set to 1.  If IsC bit is set, then we
+don't want to be writing to main memory and sorts.  This is precisely the
+reason we have conditional check in lines 3-4 of store word code \ref{code:opsw}.
 
 Since the cache is supposed to be isolated all ``stores'' should end
 up in the cache and never in the main memory. Even if we don't
 implement the cache we don't want the BIOS to start writing at random
 locations in main memory when it thinks it writes to the cache so we
-can start by ignoring all writes when this isolation bit is set:
-
-\begin{lstlisting}
-impl Cpu {
-    //...
-
-    /// Store Word
-    fn op_sw(&mut self, instruction: Instruction) {
-
-        if self.sr & 0x10000 != 0 {
-            // Cache is isolated, ignore write
-            println!("ignoring store while cache is isolated");
-            return;
-        }
-
-	//...
-    }
-}
-\end{lstlisting}
+can start by ignoring all writes when this isolation bit is set.
 
 \subsection{BNE instruction}
 
+Followed by couple of NOPs and \code{0x240a0000}, \code{0x240b0f80},
+\code{0xad400000}, 0xad400\newline020, \code{0xad400030}, \code{0xad400040},
+\code{0xad400050}, \code{0xad400060}, \code{0xad400070}, we focus on next
+instruction.
 We now encounter the instruction \code{0x154bfff7}. It encodes a BNE
 or ``branch if not equal'' instruction. The difference between jumps
 and branches is that branches are \emph{conditional} and they use
 \emph{relative offsets}.
 
 The immediate value is sign extended (in order to allow for negative
-offsets) and multiplied by 4 (as always, the PC must be aligned to
-32bits at all times). Therefore this instruction decodes to:
+offsets), which is -9 in deciaml, and multiplied by 4 (as always,
+the PC must be aligned to 32bits at all times)\footnote{The immediate offset
+  in branch instructions like BNE is specified in instruction units, meaning
+  the offset is relative to the number of instructions, not bytes.  So to
+  convert the immediate from instruction count to a byte address offset, signed
+  immediate value must be multiplied by 4.}. Therefore this instruction decodes to:
 
 \begin{lstlisting}[language=assembly]
 bne $10, $11, -36
