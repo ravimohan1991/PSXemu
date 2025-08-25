@@ -812,26 +812,29 @@ void CPU::op_bne()
 
 void CPU::op_mtc0()
 {
-    uint value = registers[instr.rt()];
-    uint reg = instr.rd();
+	uint value = registers[instr.rt()];
+	uint reg = instr.rd();
 
-    bool prev_IEC = cop0.sr.IEc;
+	bool prev_IEC = cop0.sr.IEc;
 
-    if (reg == 13) {
-        cop0.cause.raw &= ~(uint)0x300;
-        cop0.cause.raw |= value & 0x300;
-    }
-    else {
-        cop0.regs[reg] = value;
-    }
+	if (reg == 13)
+	{
+		cop0.cause.raw &= ~(uint)0x300;
+		cop0.cause.raw |= value & 0x300;
+	}
+	else
+	{
+		cop0.regs[reg] = value;
+	}
 
-    uint irq_mask = cop0.sr.Sw | (cop0.sr.Intr >> 2);
-    uint irq_pending = cop0.cause.Sw | (cop0.cause.IP >> 2);
+	uint irq_mask = cop0.sr.Sw | (cop0.sr.Intr >> 2);
+	uint irq_pending = cop0.cause.Sw | (cop0.cause.IP >> 2);
 
-    if (!prev_IEC && cop0.sr.IEc && (irq_mask & irq_pending) > 0) {
-        pc = next_pc;
-        exception(ExceptionType::Interrupt, instr.id());
-    }
+	if (!prev_IEC && cop0.sr.IEc && (irq_mask & irq_pending) > 0)
+	{
+		pc = next_pc;
+		exception(ExceptionType::Interrupt, instr.id());
+	}
 }
 
 void CPU::op_or()
@@ -903,6 +906,6 @@ void CPU::set_reg(uint regN, uint value)
 
 void CPU::load(uint regN, uint value)
 {
-    delayed_memory_load.reg = regN;
-    delayed_memory_load.value = value;
+	delayed_memory_load.reg = regN;
+	delayed_memory_load.value = value;
 }

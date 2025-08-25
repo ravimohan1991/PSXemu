@@ -112,10 +112,12 @@ public:
 	/**
 	 * @brief
 	 * Registration of opcodes by creating a lookup table with key-value
-	 * pair with key being some address in bios ? (to be made clear later) and value is address of op function
+	 * pair with key being the opcode (the binary representation of bits [31:26]
+	 * of the obtained instruction) and value is address of C++ implementation
+	 * of operation (setting of appropriate registers)
 	 *
 	 * @see
-	 * ``lookup``
+	 * ``lookup``, ``core/Instr/opcode``
 	 *
 	 */
 	void register_opcodes();
@@ -133,7 +135,10 @@ public:
 	void handle_interrupts();
 
 	/**
-	 * @brief
+	 * @brief Basically sets the register (write_back.reg) to the value write_back.value
+	 * as per directed C++ implementation of opcode
+	 *
+	 * @see ``set_reg``
 	 */
 	void handle_load_delay();
 	void force_test();
@@ -141,6 +146,13 @@ public:
 	void break_on_next_tick();
 
 	void exception(ExceptionType cause, uint cop = 0);
+	
+	/**
+	 * @brief Stores the regN and value in write_back.reg and write_back.value
+	 * respectively. The application to registers is done in ``handle_load_delay`` function.
+	 *
+	 * @see ``handle_load_delay``
+	 */
 	void set_reg(uint regN, uint value);
 
 	void load(uint regN, uint value);

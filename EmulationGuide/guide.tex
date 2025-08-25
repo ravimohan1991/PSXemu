@@ -2343,6 +2343,30 @@ const Range CACHE_CONTROL = Range(0xfffe0130, 4);
 
 \subsection{The coprocessors}
 
+\begin{verbatim}
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc0023c
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc0023c using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc0023c -> Physical address: 0x1fc0023c
+[12:31:59][info] KARMA: Found abs_addr (1fc0023c) in BIOSes range
+[12:31:59][info] KARMA: Offset 572
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 1082941440, 0x408c6000
+[12:31:59][info] KARMA: | opcode: 16, 0x10
+[12:31:59][info] KARMA: | rs: 4, 0x4
+[12:31:59][info] KARMA: | rt: 12, 0xc
+[12:31:59][info] KARMA: | imm: 24576, 0x6000
+[12:31:59][info] KARMA: | imms: 24576, 0x6000
+[12:31:59][info] KARMA: | rd: 12, 0xc
+[12:31:59][info] KARMA: | sa: 0, 0x0
+[12:31:59][info] KARMA: | addr: 9199616, 0x8c6000
+[12:31:59][info] KARMA: | id: 0, 0x0
+[12:31:59][info] KARMA: +-------------------------------------------------------
+\end{verbatim}
+
 The next unhandled instruction, \code{0x408c6000}, involves one of
 the R3000 CPU coprocessors.
 
@@ -2391,38 +2415,24 @@ the coprocessor 0. The generic format is \code{0b0100}\emph{nn} where
 \emph{nn} is the coprocessor number.
 
 \begin{lstlisting}
-impl Cpu {
-    //...
-
-    fn decode_and_execute(&mut self, instruction: Instruction) {
-        match instruction.function() {
-	    //...
-            0b010000 => self.op_cop0(instruction),
-            _        => panic!("Unhandled instruction {}",
-                               instruction),
-        }
-    }
-
-    /// Coprocessor 0 opcode
-    fn op_cop0(&mut self, instruction: Instruction) {
-        match instruction.cop_opcode() {
-            0b00100 => self.op_mtc0(instruction),
-            _       => panic!("unhandled cop0 instruction {}",
-                              instruction)
-        }
-    }
+void CPU::op_cop0()
+{
+	switch (instr.rs())
+	{
+		case 0b00000: op_mfc0(); break;
+		case 0b00100: op_mtc0(); break;
+		case 0b10000: op_rfe(); break;
+		default: exception(ExceptionType::IllegalInstr, instr.id()); break;
+	}
 }
 \end{lstlisting}
 
-\code{Instruction::cop\_opcode} returns the same bit range as
-\code{Instruction::s}, however it returns it as a plain \code{u32}
-instead of a \code{RegisterIndex} (since it's not a register in this
-case). You see that the current coprocessor opcode \code{0b00100} means
+You see that the current coprocessor opcode \code{0b00100} means
 MTC0 or ``move to coprocessor 0''. This instruction takes two
 parameters: the source register index (one of the CPU's general
 registers) and the target register (one of the coprocessor's
-register). Those parameters are respectively in bits [20:16] and
-[15:11] of the instruction.
+register). Those parameters are respectively in bits [20:16] (rt) and
+[15:11] (rd) of the instruction.
 
 In our current instruciton both of those parameters are equal to 12 so
 if we decode the instruction in full it gives\footnote{This is

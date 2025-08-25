@@ -41,6 +41,11 @@ union Cop0CAUSE {
 	};
 };
 
+/**
+ * @brief The coprocessor 0 (cop0) is mandated by the MIPS architecture: it’s used
+ * for exception handling. Exceptions are things like hardware interrupts and
+ * traps (divisions by zero, integer overflows, system calls etc...).
+ */
 union Cop0 {
 	uint regs[64];
 
@@ -57,7 +62,7 @@ union Cop0 {
 		uint BDAM;		/* Breakpoint Data Address Mask */
 		uint r10;
 		uint BpcM;		/* Breakpoint Program Counter Mask */
-		Cop0STAT sr;	    /* Status */
+		Cop0STAT sr;	/* Status */
 		Cop0CAUSE cause;	/* Cause */
 		uint epc;		/* Exception Program Counter */
 		uint PRId;		/* Processor Revision Identifier */
