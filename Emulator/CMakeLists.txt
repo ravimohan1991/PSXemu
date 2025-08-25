@@ -177,7 +177,7 @@ find_library(QUARTZCORE QuartzCore)
 find_library(APPKIT AppKit)
 
 # Set the project name and version
-project(core VERSION 1.0) # Versioning shall change to something more appropriate
+project(Emulator VERSION 1.0) # Versioning shall change to something more appropriate
 
 # Karma's personal code
 file(GLOB_RECURSE CPPFILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
@@ -186,13 +186,13 @@ file(GLOB_RECURSE CFILES ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
 file(GLOB_RECURSE HEADERFILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 file(GLOB_RECURSE HEADERCFILES ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 
-SOURCE_GROUP_BY_FOLDER(../core)
+SOURCE_GROUP_BY_FOLDER(../Emulator)
 
 # Building the project (STATIC or DYNAMIC (SHARED))
-add_executable(core ${CPPFILES} ${CFILES} ${HEADERFILES} ${HEADERCFILES})
+add_executable(Emulator ${CPPFILES} ${CFILES} ${HEADERFILES} ${HEADERCFILES})
 
 
-target_include_directories(core
+target_include_directories(Emulator
     PRIVATE
         # where the library itself will look for its internal headers
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -204,7 +204,7 @@ target_include_directories(core
 # Since I am a library coder here, I am the Producer
 # Rest of the Engine is Consumer here
 
-target_compile_definitions(core PUBLIC core)
+target_compile_definitions(Emulator PUBLIC Emulator)
 
 #[[
  *                                          /\

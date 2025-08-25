@@ -82,13 +82,13 @@ add_subdirectory(libraries/spdlog)
 add_subdirectory(libraries/glfw)
 
 # The emulator software directory
-add_subdirectory(core)
+add_subdirectory(Emulator)
 
 
-target_link_libraries(core PUBLIC glm)
-target_link_libraries(core PUBLIC glfw)
+target_link_libraries(Emulator PUBLIC glm)
+target_link_libraries(Emulator PUBLIC glfw)
 
-target_link_libraries(core PUBLIC spdlogging)
+target_link_libraries(Emulator PUBLIC spdlogging)
 
 #[[
  *                                          /\
