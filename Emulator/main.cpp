@@ -4,15 +4,15 @@
 
 int main()
 {
-    Karma::Log::Init();
-    
-    auto emulator = std::make_unique<Bus>("/home/the-cowboy/PSXemu/bios/SCPH1001.BIN");
+	Karma::Log::Init();
 
-    std::string game_file = "./roms/RIDGERACERUSA.CUE";
+	auto emulator = std::make_unique<Bus>("/Users/quark/PSXemu/bios/SCPH1001.BIN");
+
+	std::string game_file = "./roms/RIDGERACERUSA.CUE";
 	emulator->cddrive->insert_disk(game_file);
 
-    while (/*emulator->renderer->is_open()*/true)
-    {
+	while (/*emulator->renderer->is_open()*/true)
+	{
 		emulator->tick();
 	}
 }
