@@ -30,6 +30,8 @@ target_include_directories(spdlogging
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+set_target_properties(spdlogging PROPERTIES FOLDER "${KARMALIBRARYFOLDER}")
+
 target_compile_definitions(spdlogging PUBLIC spdlogging)
 
 #[[

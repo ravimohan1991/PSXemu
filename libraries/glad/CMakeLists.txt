@@ -19,6 +19,7 @@ else()
     add_library(Glad SHARED ${GLADSRC} include/glad/glad.h)
 endif()
 
+set_target_properties(Glad PROPERTIES FOLDER "${KARMALIBRARYFOLDER}")
 
 
 # INTERFACE (Something that Consumers require but Producers don't)

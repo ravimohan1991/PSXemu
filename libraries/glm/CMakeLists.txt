@@ -23,6 +23,9 @@ message(STATUS "GLM: Version " ${GLM_VERSION})
 add_subdirectory(glm)
 add_library(glm::glm ALIAS glm)
 
+set_target_properties(glm PROPERTIES FOLDER "${KARMALIBRARYFOLDER}")
+
+
 #[[
  *                                          /\
  *                                         / /
