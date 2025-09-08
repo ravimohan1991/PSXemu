@@ -219,12 +219,12 @@ void Bus::irq(Interrupt interrupt) const
 template<typename T>
 T Bus::read(uint addr)
 {
-	KR_CORE_INFO("------ Bus read ------");
+	// KR_CORE_INFO("------ Bus read ------");
 
 	/* Map the memory ranges. */
 	uint abs_addr = physical_addr(addr);
 
-	KR_CORE_INFO("BIOS address: 0x{0:x} -> Physical address: 0x{1:x}", addr, abs_addr);
+	// KR_CORE_INFO("BIOS address: 0x{0:x} -> Physical address: 0x{1:x}", addr, abs_addr);
 
 	/* HACK: Skip reading SPU_DELAY. */
 	if (abs_addr == 0x1F801014) return 0;
@@ -241,11 +241,11 @@ T Bus::read(uint addr)
 	}
 	else if (BIOS.contains(abs_addr))
 	{
-		KR_CORE_INFO("Found abs_addr ({0:x}) in BIOSes range", abs_addr);
+		// KR_CORE_INFO("Found abs_addr ({0:x}) in BIOSes range", abs_addr);
 
 		int offset = BIOS.offset(abs_addr);
 
-		KR_CORE_INFO("Offset {0}", offset);
+		// KR_CORE_INFO("Offset {0}", offset);
 		return util::read_memory<T>(bios, offset);
 	}
 	else if (SCRATCHPAD.contains(abs_addr))

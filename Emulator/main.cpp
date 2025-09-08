@@ -11,7 +11,7 @@ int main()
 	std::string game_file = "./roms/RIDGERACERUSA.CUE";
 	emulator->cddrive->insert_disk(game_file);
 
-	while (/*emulator->renderer->is_open()*/true)
+	while (emulator->renderer->is_open())
 	{
 		emulator->tick();
 	}

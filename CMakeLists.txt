@@ -75,6 +75,10 @@ elseif(APPLE)
     add_compile_definitions(KR_MAC_PLATFORM)
 endif()
 
+# We find required or optional packages
+find_package(Vulkan REQUIRED)
+
+
 # Then we specify the involved libraries
 add_subdirectory(libraries/glm)
 add_subdirectory(libraries/glad)
@@ -87,8 +91,12 @@ add_subdirectory(Emulator)
 
 target_link_libraries(Emulator PUBLIC glm)
 target_link_libraries(Emulator PUBLIC glfw)
-
+target_link_libraries(Emulator PRIVATE Vulkan::Vulkan)
 target_link_libraries(Emulator PUBLIC spdlogging)
+
+if(APPLE)
+	set_target_properties(Emulator PROPERTIES MACOSX_BUNDLE TRUE)
+endif()
 
 #[[
  *                                          /\

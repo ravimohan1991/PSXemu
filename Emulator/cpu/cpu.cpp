@@ -32,8 +32,8 @@ void CPU::tick()
 		log_file << "PC: 0x" << std::hex << pc << '\n';
 	}
 
-	KR_CORE_INFO("Inside CPU::tick");
-	KR_CORE_INFO("PC: 0x{0:x}", pc);
+	// KR_CORE_INFO("Inside CPU::tick");
+	// KR_CORE_INFO("PC: 0x{0:x}", pc);
 
 	/* Fetch next instruction. */
 	fetch();
@@ -42,12 +42,10 @@ void CPU::tick()
 
 	/* Execute it. */
 	auto& handler = lookup[instr.opcode()];
-
-	KR_CORE_INFO("Attempting executing opcode 0x{0:x} from lookup table", instr.opcode());
 	
 	if (handler != nullptr)
 	{
-		KR_CORE_INFO("Executing legal instruction");
+		// KR_CORE_INFO("Executing legal instruction");
 		handler();
 	}
 	else
@@ -137,11 +135,11 @@ void CPU::handle_interrupts()
 
 void CPU::fetch()
 {
-	KR_CORE_INFO("Fetching next instruction");
+	// KR_CORE_INFO("Fetching next instruction");
 
 	instr.value = read(pc);
 
-	KR_CORE_INFO("+-------------------------------------------------------");
+	/*KR_CORE_INFO("+-------------------------------------------------------");
 	KR_CORE_INFO("| Fetched instruction ");
 	KR_CORE_INFO("| value: {0}, 0x{0:x}", instr.value);
 	KR_CORE_INFO("| opcode: {0}, 0x{0:x}", instr.opcode());
@@ -154,7 +152,7 @@ void CPU::fetch()
 	KR_CORE_INFO("| addr: {0}, 0x{0:x}", instr.addr());
 	KR_CORE_INFO("| id: {0}, 0x{0:x}", instr.id());
 	KR_CORE_INFO("| function: {0}, 0x{0:x}", instr.function());
-	KR_CORE_INFO("+-------------------------------------------------------");
+	KR_CORE_INFO("+-------------------------------------------------------");*/
 
 	/* Update PC. */
 	current_pc = pc;
