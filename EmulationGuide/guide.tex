@@ -2540,7 +2540,7 @@ and branches is that branches are \emph{conditional} and they use
 \emph{relative offsets}.
 
 The immediate value is sign extended (in order to allow for negative
-offsets), which is -9 in deciaml, and multiplied by 4 (as always,
+offsets), which is -9 in decimal, and multiplied by 4 (as always,
 the PC must be aligned to 32bits at all times)\footnote{The immediate offset
   in branch instructions like BNE is specified in instruction units, meaning
   the offset is relative to the number of instructions, not bytes.  So to
@@ -2565,49 +2565,55 @@ function because we'll have to use the same logic in the other branch
 instructions:
 
 \begin{lstlisting}
-impl Cpu {
-    //...
+void CPU::branch()
+{
+	took_branch = true;
+	next_pc = pc + (instr.imm_s() << 2);// Offset immediates are always shifted two places to the right since `PC` addresses have to be aligned on 32bits at all times.
+}
 
-    /// Branch to immediate value `offset`.
-    fn branch(&mut self, offset: u32) {
-        // Offset immediates are always shifted two places to the
-        // right since `PC` addresses have to be aligned on 32bits at
-        // all times.
-        let offset = offset << 2;
+/// Branch if Not Equal
+void CPU::op_bne()
+{
+	uint rs = instr.rs();
+	uint rt = instr.rt();
 
-        let mut pc = self.pc;
-
-        pc = pc.wrapping_add(offset);
-
-        // We need to compensate for the hardcoded
-        // `pc.wrapping_add(4)` in `run_next_instruction`
-        pc = pc.wrapping_sub(4);
-
-        self.pc = pc;
-    }
-
-    /// Branch if Not Equal
-    fn op_bne(&mut self, instruction: Instruction) {
-        let i = instruction.imm_se();
-        let s = instruction.s();
-        let t = instruction.t();
-
-        if self.reg(s) != self.reg(t) {
-            self.branch(i);
-        }
-    }
+	is_branch = true;
+	if (registers[rs] != registers[rt])
+	{
+		branch();
+	}
 }
 \end{lstlisting}
 
-Notice the \code{wrapping\_sub(4)} to compensate for our
-\code{pc.wrapping\_add(4)} in
-\code{run\_next\_instruction}. Without it we'd branch one
-instruction too far.
-
 \subsection{ADDI instruction}
 
+The logs corresponding to next instruction are
+\begin{verbatim}
+[12:31:59][info] KARMA: Inside CPU::tick
+[12:31:59][info] KARMA: PC: 0xbfc00274
+[12:31:59][info] KARMA: Fetching next instruction
+[12:31:59][info] KARMA: Attempting to read virtual address bfc00274 using bus
+[12:31:59][info] KARMA: ------ Bus read ------
+[12:31:59][info] KARMA: BIOS address: 0xbfc00274 -> Physical address: 0x1fc00274
+[12:31:59][info] KARMA: Found abs_addr (1fc00274) in BIOSes range
+[12:31:59][info] KARMA: Offset 628
+[12:31:59][info] KARMA: +-------------------------------------------------------
+[12:31:59][info] KARMA: | Fetched instruction 
+[12:31:59][info] KARMA: | value: 558497920, 0x214a0080
+[12:31:59][info] KARMA: | opcode: 8, 0x8
+[12:31:59][info] KARMA: | rs: 10, 0xa
+[12:31:59][info] KARMA: | rt: 10, 0xa
+[12:31:59][info] KARMA: | imm: 128, 0x80
+[12:31:59][info] KARMA: | imms: 128, 0x80
+[12:31:59][info] KARMA: | rd: 0, 0x0
+[12:31:59][info] KARMA: | sa: 2, 0x2
+[12:31:59][info] KARMA: | addr: 21627008, 0x14a0080
+[12:31:59][info] KARMA: | id: 0, 0x0
+[12:31:59][info] KARMA: +-------------------------------------------------------
+\end{verbatim}
+
 Before we even reach the target of the branch we stumble upon
-unhandled instruction \code{0x214a0080}. This one is an ADDI which
+instruction \code{0x214a0080}. This one is an ADDI which
 behaves exactly like the ADDIU instruction we've already implemented
 except that it generates an exception if the addition overflows.
 
@@ -2626,35 +2632,55 @@ rust's standard library\footnote{If you're implementing this in C or
   overflow, we'll change that when we actually implement exceptions:
 
 \begin{lstlisting}
-impl Cpu {
-    //...
+void CPU::op_addi()
+{
+	uint rs = registers[instr.rs()];
+	uint imm_s = instr.imm_s();
+	uint addi = rs + imm_s;
 
-    /// Add Immediate Unsigned and check for overflow
-    fn op_addi(&mut self, instruction: Instruction) {
-        let i = instruction.imm_se() as i32;
-        let t = instruction.t();
-        let s = instruction.s();
-
-        let s = self.reg(s) as i32;
-
-        let v = match s.checked_add(i) {
-            Some(v) => v as u32,
-            None    => panic!("ADDI overflow"),
-        };
-
-        self.set_reg(t, v);
-    }
+	bool overflow = util::add_overflow(rs, imm_s, addi);
+	if (!overflow)
+	{
+		set_reg(instr.rt(), addi);
+	}
+	else
+	{
+		exception(ExceptionType::Overflow, instr.id());
+	}
 }
+static inline bool add_overflow(uint old_value, uint add_value, uint new_value)
+{
+	return (((new_value ^ old_value) & (new_value ^ add_value)) & UINT32_C(0x80000000)) != 0;
+}          
 \end{lstlisting}
 
-The cast to \code{i32} is important because something like
-\code{0x4 + 0xffffffff} is an overflow in 32bit unsigned
-arithmetics. If the operands are signed however it's simply 4 + -1 and
-that's obviously perfectly fine. The actual result of the operation
-would be the same (\code{0x00000003}) but since ADDI generates an
-exception on overflow the difference in behaviour is critical.
+Seems like this is a classic trick of bitwise operations to detect overflow.
 
 \subsection{Memory loads}
+
+\begin{verbatim}
+[12:32:01][info] KARMA: Inside CPU::tick
+[12:32:01][info] KARMA: PC: 0xbfc00334
+[12:32:01][info] KARMA: Fetching next instruction
+[12:32:01][info] KARMA: Attempting to read virtual address bfc00334 using bus
+[12:32:01][info] KARMA: ------ Bus read ------
+[12:32:01][info] KARMA: BIOS address: 0xbfc00334 -> Physical address: 0x1fc00334
+[12:32:01][info] KARMA: Found abs_addr (1fc00334) in BIOSes range
+[12:32:01][info] KARMA: Offset 820
+[12:32:01][info] KARMA: +-------------------------------------------------------
+[12:32:01][info] KARMA: | Fetched instruction 
+[12:32:01][info] KARMA: | value: 2366177280, 0x8d090000
+[12:32:01][info] KARMA: | opcode: 35, 0x23
+[12:32:01][info] KARMA: | rs: 8, 0x8
+[12:32:01][info] KARMA: | rt: 9, 0x9
+[12:32:01][info] KARMA: | imm: 0, 0x0
+[12:32:01][info] KARMA: | imms: 0, 0x0
+[12:32:01][info] KARMA: | rd: 0, 0x0
+[12:32:01][info] KARMA: | sa: 0, 0x0
+[12:32:01][info] KARMA: | addr: 17367040, 0x1090000
+[12:32:01][info] KARMA: | id: 3, 0x3
+[12:32:01][info] KARMA: +-------------------------------------------------------
+\end{verbatim}
 
 The next unhandled instruction, \code{0x8d090000} is LW or ``load
 word''. It decodes to:
@@ -2666,29 +2692,31 @@ lw $9, 0($8)
 We can reuse the \code{load32} method to fetch the data from memory:
 
 \begin{lstlisting}
-impl Cpu {
-    //...
+void CPU::op_lw()
+{
+	if (!cop0.sr.IsC)
+	{
+		uint addr = registers[instr.rs()] + instr.imm_s();
 
-    /// Load Word
-    fn op_lw(&mut self, instruction: Instruction) {
-
-        if self.sr & 0x10000 != 0 {
-            // Cache is isolated, ignore write
-            println!("Ignoring load while cache is isolated");
-            return;
-        }
-
-        let i = instruction.imm_se();
-        let t = instruction.t();
-        let s = instruction.s();
-
-        let addr = self.reg(s).wrapping_add(i);
-
-        let v = self.load32(addr);
-
-        self.set_reg(t, v);
-    }
+		if ((addr & 0x3) == 0)
+		{
+			uint value = bus->read(addr);
+			load(instr.rt(), value);
+		}
+		else
+		{
+			cop0.BadA = addr;
+			exception(ExceptionType::ReadError, instr.id());
+		}
+	}
 }
+
+void CPU::load(uint regN, uint value)
+{
+	delayed_memory_load.reg = regN;
+	delayed_memory_load.value = value;
+}
+      
 \end{lstlisting}
 
 There's a subtle problem with this implementation however.

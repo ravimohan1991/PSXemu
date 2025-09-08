@@ -610,8 +610,8 @@ void CPU::op_slti()
 
 void CPU::branch()
 {
-    took_branch = true;
-    next_pc = pc + (instr.imm_s() << 2);
+	took_branch = true;
+	next_pc = pc + (instr.imm_s() << 2);
 }
 
 void CPU::op_jalr()
@@ -771,43 +771,50 @@ void CPU::op_sltu()
 
 void CPU::op_lw()
 {
-    if (!cop0.sr.IsC) {
-        uint addr = registers[instr.rs()] + instr.imm_s();
+	if (!cop0.sr.IsC)
+	{
+		uint addr = registers[instr.rs()] + instr.imm_s();
 
-        if ((addr & 0x3) == 0) {
-            uint value = bus->read(addr);
-            load(instr.rt(), value);
-        }
-        else {
-            cop0.BadA = addr;
-            exception(ExceptionType::ReadError, instr.id());
-        }
-
-    }
+		if ((addr & 0x3) == 0)
+		{
+			uint value = bus->read(addr);
+			load(instr.rt(), value);
+		}
+		else
+		{
+			cop0.BadA = addr;
+			exception(ExceptionType::ReadError, instr.id());
+		}
+	}
 }
 
 void CPU::op_addi()
 {
-    uint rs = registers[instr.rs()];
-    uint imm_s = instr.imm_s();
-    uint addi = rs + imm_s;
+	uint rs = registers[instr.rs()];
+	uint imm_s = instr.imm_s();
+	uint addi = rs + imm_s;
 
-    bool overflow = util::add_overflow(rs, imm_s, addi);
-    if (!overflow)
-        set_reg(instr.rt(), addi);
-    else
-        exception(ExceptionType::Overflow, instr.id());
+	bool overflow = util::add_overflow(rs, imm_s, addi);
+	if (!overflow)
+	{
+		set_reg(instr.rt(), addi);
+	}
+	else
+	{
+		exception(ExceptionType::Overflow, instr.id());
+	}
 }
 // TODO
 void CPU::op_bne()
 {
-    uint rs = instr.rs();
-    uint rt = instr.rt();
+	uint rs = instr.rs();
+	uint rt = instr.rt();
 
-    is_branch = true;
-    if (registers[rs] != registers[rt]) {
-        branch();
-    }
+	is_branch = true;
+	if (registers[rs] != registers[rt])
+	{
+		branch();
+	}
 }
 
 void CPU::op_mtc0()
