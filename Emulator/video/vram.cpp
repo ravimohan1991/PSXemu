@@ -7,6 +7,8 @@
 void VRAM::init()
 {
 	image_buffer = new ubyte[3 * 1024 * 512];
+
+    // https://github.com/ravimohan1991/PSXemu/blob/41fd3434eb029ca17eb8e55bad1a52a6289be09d/core/video/vram.cpp#L9-L35
 	ptr = new ushort[1024 * 512 * 2];
 }
 
