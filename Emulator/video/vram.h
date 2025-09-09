@@ -28,7 +28,7 @@ constexpr int VRAM_HEIGHT = 512;
 class VRAM {
 public:
 	VRAM() = default;
-	~VRAM() = default;
+    ~VRAM();
 
 	void init();
 	void upload_to_gpu();

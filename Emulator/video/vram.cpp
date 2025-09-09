@@ -10,6 +10,12 @@ void VRAM::init()
 	ptr = new ushort[1024 * 512 * 2];
 }
 
+VRAM::~VRAM()
+{
+    delete image_buffer;
+    delete ptr;
+}
+
 void VRAM::upload_to_gpu()
 {
 }
