@@ -7,6 +7,7 @@
 void VRAM::init()
 {
 	image_buffer = new ubyte[3 * 1024 * 512];
+	ptr = new ushort[1024 * 512 * 2];
 }
 
 void VRAM::upload_to_gpu()
